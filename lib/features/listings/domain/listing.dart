@@ -7,6 +7,8 @@ class Listing {
     required this.address,
     required this.authorId,
     required this.images,
+    this.lat,
+    this.lng,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -18,6 +20,8 @@ class Listing {
   final String address;
   final String authorId;
   final List<String> images;
+  final double? lat;
+  final double? lng;
   final String createdAt;
   final String updatedAt;
 
@@ -30,6 +34,8 @@ class Listing {
       address: json['address'] as String,
       authorId: json['authorId'] as String,
       images: (json['images'] as List<dynamic>?)?.cast<String>() ?? [],
+      lat: (json['lat'] as num?)?.toDouble(),
+      lng: (json['lng'] as num?)?.toDouble(),
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
     );

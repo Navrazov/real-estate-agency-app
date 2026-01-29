@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_service.dart';
+import '../../../../core/widgets/listings_map.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
 
@@ -18,6 +19,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   Listing? _listing;
   bool _loading = true;
   String? _error;
+  int _imageIndex = 0;
 
   @override
   void initState() {
@@ -64,6 +66,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   Widget build(BuildContext context) {
     final auth = AuthServiceScope.of(context);
     final canEdit = _listing != null && (auth.user?.id == _listing!.authorId || auth.user?.role == 'admin');
+    final images = _listing?.images ?? [];
+    final hasCoords = _listing?.lat != null && _listing?.lng != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -96,23 +100,84 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
               : _listing == null
                   ? const Center(child: Text('Не найдено'))
                   : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            _listing!.title,
-                            style: Theme.of(context).textTheme.headlineSmall,
+                          if (images.isNotEmpty) ...[
+                            SizedBox(
+                              height: 280,
+                              child: PageView.builder(
+                                itemCount: images.length,
+                                onPageChanged: (i) => setState(() => _imageIndex = i),
+                                itemBuilder: (context, i) => Image.network(
+                                  images[i],
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            if (images.length > 1)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: List.generate(
+                                    images.length,
+                                    (i) => Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: i == _imageIndex ? Theme.of(context).colorScheme.primary : Colors.grey,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _listing!.title,
+                                  style: Theme.of(context).textTheme.headlineSmall,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '${_listing!.price.toStringAsFixed(0)} ₽',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(_listing!.address, style: Theme.of(context).textTheme.bodyMedium),
+                                const SizedBox(height: 16),
+                                Text(_listing!.description),
+                                if (hasCoords) ...[
+                                  const SizedBox(height: 24),
+                                  Text('На карте', style: Theme.of(context).textTheme.titleMedium),
+                                  const SizedBox(height: 8),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: SizedBox(
+                                      height: 220,
+                                      child: ListingsMap(
+                                        markers: [
+                                          MapMarker(
+                                            id: _listing!.id,
+                                            lat: _listing!.lat!,
+                                            lng: _listing!.lng!,
+                                            title: _listing!.title,
+                                          ),
+                                        ],
+                                        height: 220,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${_listing!.price.toStringAsFixed(0)} ₽',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(_listing!.address, style: Theme.of(context).textTheme.bodyMedium),
-                          const SizedBox(height: 16),
-                          Text(_listing!.description),
                         ],
                       ),
                     ),

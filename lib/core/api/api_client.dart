@@ -35,10 +35,29 @@ class ApiClient {
     return headers;
   }
 
-  Future<T> get<T>(String path, T Function(dynamic) fromJson, {bool withAuth = true}) async {
-    final uri = Uri.parse('$_baseUrl$path');
+  Future<T> get<T>(String path, T Function(dynamic) fromJson, {bool withAuth = true, Map<String, String>? queryParams}) async {
+    var uri = Uri.parse('$_baseUrl$path');
+    if (queryParams != null && queryParams.isNotEmpty) {
+      uri = uri.replace(queryParameters: queryParams);
+    }
     final res = await http.get(uri, headers: await _headers(withAuth: withAuth));
     return _handleResponse(res, fromJson);
+  }
+
+  Future<List<String>> uploadImages(List<http.MultipartFile> files) async {
+    final uri = Uri.parse('$_baseUrl/upload');
+    final request = http.MultipartRequest('POST', uri);
+    final token = await getToken();
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+    for (final f in files) request.files.add(f);
+    final streamed = await request.send();
+    final res = await http.Response.fromStream(streamed);
+    final data = jsonDecode(res.body) as Map<String, dynamic>?;
+    if (res.statusCode >= 400) {
+      throw Exception(data?['error'] ?? res.body);
+    }
+    final urls = data?['urls'] as List<dynamic>?;
+    return urls?.map((e) => e as String).toList() ?? [];
   }
 
   Future<T> post<T>(String path, Map<String, dynamic>? body, T Function(dynamic) fromJson, {bool withAuth = true}) async {
