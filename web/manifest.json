@@ -1,0 +1,12 @@
+{
+    "name": "real_estate_app",
+    "short_name": "real_estate_app",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0175C2",
+    "theme_color": "#0175C2",
+    "description": "Real estate listings app",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": []
+}
