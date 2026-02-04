@@ -2,10 +2,26 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 
 class User {
-  User({required this.id, required this.email, required this.role});
+  User({
+    required this.id,
+    required this.email,
+    required this.role,
+    this.name,
+    this.phone,
+    this.avatar,
+    this.favorites = const [],
+  });
+
   final String id;
   final String email;
   final String role;
+  final String? name;
+  final String? phone;
+  final String? avatar;
+  final List<String> favorites;
+
+  String get displayName => name ?? email.split('@').first;
+  bool get isAdmin => role == 'admin';
 }
 
 class AuthService extends ChangeNotifier {
@@ -30,7 +46,10 @@ class AuthService extends ChangeNotifier {
       return;
     }
     try {
-      final data = await _api.get<Map<String, dynamic>>('/users/me', (d) => d as Map<String, dynamic>);
+      final data = await _api.get<Map<String, dynamic>>(
+        '/users/me',
+        (d) => d as Map<String, dynamic>,
+      );
       if (data['blocked'] == true) {
         await _api.setToken(null);
         _user = null;
@@ -39,6 +58,10 @@ class AuthService extends ChangeNotifier {
           id: data['id'] as String,
           email: data['email'] as String,
           role: data['role'] as String,
+          name: data['name'] as String?,
+          phone: data['phone'] as String?,
+          avatar: data['avatar'] as String?,
+          favorites: (data['favorites'] as List<dynamic>?)?.cast<String>() ?? [],
         );
       }
     } catch (_) {
@@ -57,36 +80,46 @@ class AuthService extends ChangeNotifier {
       withAuth: false,
     );
     await _api.setToken(data['token'] as String);
-    final u = data['user'] as Map<String, dynamic>;
-    _user = User(
-      id: u['id'] as String,
-      email: u['email'] as String,
-      role: u['role'] as String,
-    );
-    notifyListeners();
+    await _loadUser();
   }
 
-  Future<void> register(String email, String password) async {
+  Future<void> register(String email, String password, {String? name}) async {
+    final body = <String, dynamic>{
+      'email': email,
+      'password': password,
+    };
+    if (name != null && name.isNotEmpty) {
+      body['name'] = name;
+    }
     final data = await _api.post<Map<String, dynamic>>(
       '/auth/register',
-      {'email': email, 'password': password},
+      body,
       (d) => d as Map<String, dynamic>,
       withAuth: false,
     );
     await _api.setToken(data['token'] as String);
-    final u = data['user'] as Map<String, dynamic>;
-    _user = User(
-      id: u['id'] as String,
-      email: u['email'] as String,
-      role: u['role'] as String,
-    );
-    notifyListeners();
+    await _loadUser();
   }
 
   Future<void> logout() async {
     await _api.setToken(null);
     _user = null;
     notifyListeners();
+  }
+
+  void updateFavorites(List<String> favorites) {
+    if (_user != null) {
+      _user = User(
+        id: _user!.id,
+        email: _user!.email,
+        role: _user!.role,
+        name: _user!.name,
+        phone: _user!.phone,
+        avatar: _user!.avatar,
+        favorites: favorites,
+      );
+      notifyListeners();
+    }
   }
 }
 

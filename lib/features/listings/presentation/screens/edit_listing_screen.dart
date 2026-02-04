@@ -3,133 +3,193 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
-import '../../../../core/widgets/location_picker_map.dart';
-import '../../data/listings_repository.dart';
-import '../../domain/listing.dart';
+import 'package:real_estate_app/core/auth/auth_service.dart';
+import 'package:real_estate_app/core/widgets/location_picker_map.dart';
+import 'package:real_estate_app/features/listings/data/listings_repository.dart';
+import 'package:real_estate_app/features/listings/domain/listing.dart';
 
-class CreateListingScreen extends StatefulWidget {
-  const CreateListingScreen({super.key});
+class EditListingScreen extends StatefulWidget {
+  const EditListingScreen({super.key, required this.listingId});
+
+  final String listingId;
 
   @override
-  State<CreateListingScreen> createState() => _CreateListingScreenState();
+  State<EditListingScreen> createState() => _EditListingScreenState();
 }
 
-class _CreateListingScreenState extends State<CreateListingScreen> {
-  final _repo = ListingsRepository();
+class _EditListingScreenState extends State<EditListingScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _titleCtrl = TextEditingController();
-  final _descCtrl = TextEditingController();
-  final _priceCtrl = TextEditingController();
-  final _addressCtrl = TextEditingController();
-  final _roomsCtrl = TextEditingController();
-  final _areaCtrl = TextEditingController();
-  final _floorCtrl = TextEditingController();
-  final _totalFloorsCtrl = TextEditingController();
+  final _repo = ListingsRepository();
   final _picker = ImagePicker();
 
+  Listing? _listing;
+  bool _loading = true;
+  bool _saving = false;
+  String? _error;
+
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _priceController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _roomsController = TextEditingController();
+  final _areaController = TextEditingController();
+  final _floorController = TextEditingController();
+  final _totalFloorsController = TextEditingController();
+
   PropertyType _propertyType = PropertyType.apartment;
-  final List<String> _imageUrls = [];
+  ListingStatus _status = ListingStatus.active;
+  List<String> _images = [];
   double? _lat;
   double? _lng;
-  bool _loading = false;
-  bool _uploading = false;
-  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadListing();
+  }
 
   @override
   void dispose() {
-    _titleCtrl.dispose();
-    _descCtrl.dispose();
-    _priceCtrl.dispose();
-    _addressCtrl.dispose();
-    _roomsCtrl.dispose();
-    _areaCtrl.dispose();
-    _floorCtrl.dispose();
-    _totalFloorsCtrl.dispose();
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _priceController.dispose();
+    _addressController.dispose();
+    _roomsController.dispose();
+    _areaController.dispose();
+    _floorController.dispose();
+    _totalFloorsController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadListing() async {
+    try {
+      final listing = await _repo.getById(widget.listingId);
+      setState(() {
+        _listing = listing;
+        _titleController.text = listing.title;
+        _descriptionController.text = listing.description;
+        _priceController.text = listing.price.toStringAsFixed(0);
+        _addressController.text = listing.address;
+        _roomsController.text = listing.rooms?.toString() ?? '';
+        _areaController.text = listing.area?.toStringAsFixed(0) ?? '';
+        _floorController.text = listing.floor?.toString() ?? '';
+        _totalFloorsController.text = listing.totalFloors?.toString() ?? '';
+        _propertyType = listing.propertyType;
+        _status = listing.status;
+        _images = List.from(listing.images);
+        _lat = listing.lat;
+        _lng = listing.lng;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
   }
 
   Future<void> _pickImages() async {
     final files = await _picker.pickMultiImage();
     if (files.isEmpty) return;
 
-    setState(() {
-      _error = null;
-      _uploading = true;
-    });
+    setState(() => _error = null);
 
     try {
       final urls = await _repo.uploadImages(files.map((f) => File(f.path)).toList());
-      setState(() => _imageUrls.addAll(urls));
+      setState(() => _images.addAll(urls));
     } catch (e) {
       setState(() => _error = e.toString());
-    } finally {
-      setState(() => _uploading = false);
     }
   }
 
   void _removeImage(int index) {
-    setState(() => _imageUrls.removeAt(index));
+    setState(() => _images.removeAt(index));
   }
 
-  Future<void> _submit() async {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final price = double.tryParse(_priceCtrl.text);
-    if (price == null || price < 0) {
-      setState(() => _error = 'Укажите корректную цену');
-      return;
-    }
-
     setState(() {
-      _loading = true;
+      _saving = true;
       _error = null;
     });
 
     try {
-      final listing = await _repo.create(
-        title: _titleCtrl.text.trim(),
-        description: _descCtrl.text.trim(),
-        price: price,
-        address: _addressCtrl.text.trim(),
+      await _repo.update(
+        widget.listingId,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        price: double.parse(_priceController.text),
+        address: _addressController.text.trim(),
         propertyType: _propertyType,
-        rooms: _roomsCtrl.text.isNotEmpty ? int.tryParse(_roomsCtrl.text) : null,
-        area: _areaCtrl.text.isNotEmpty ? double.tryParse(_areaCtrl.text) : null,
-        floor: _floorCtrl.text.isNotEmpty ? int.tryParse(_floorCtrl.text) : null,
-        totalFloors: _totalFloorsCtrl.text.isNotEmpty ? int.tryParse(_totalFloorsCtrl.text) : null,
-        images: _imageUrls.isEmpty ? null : _imageUrls,
+        status: _status,
+        rooms: _roomsController.text.isNotEmpty ? int.parse(_roomsController.text) : null,
+        area: _areaController.text.isNotEmpty ? double.parse(_areaController.text) : null,
+        floor: _floorController.text.isNotEmpty ? int.parse(_floorController.text) : null,
+        totalFloors: _totalFloorsController.text.isNotEmpty ? int.parse(_totalFloorsController.text) : null,
+        images: _images,
         lat: _lat,
         lng: _lng,
       );
       if (mounted) {
-        context.go('/listing/${listing.id}');
+        context.pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Объявление опубликовано!')),
+          const SnackBar(content: Text('Изменения сохранены')),
         );
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
+      setState(() {
+        _saving = false;
+        _error = e.toString();
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = AuthServiceScope.of(context);
+    final isAdmin = auth.user?.isAdmin ?? false;
+
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Редактирование')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null && _listing == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Ошибка')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!, style: const TextStyle(color: AppColors.error)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.pop(),
+                child: const Text('Назад'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Новое объявление'),
+        title: const Text('Редактирование'),
         actions: [
           TextButton(
-            onPressed: _loading ? null : _submit,
-            child: _loading
+            onPressed: _saving ? null : _save,
+            child: _saving
                 ? const SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Опубликовать'),
+                : const Text('Сохранить'),
           ),
         ],
       ),
@@ -160,40 +220,33 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             const Text('Фотографии', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             GestureDetector(
-              onTap: _uploading ? null : _pickImages,
+              onTap: _pickImages,
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.border, width: 2),
+                  border: Border.all(color: AppColors.border, width: 2, style: BorderStyle.solid),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   children: [
-                    Icon(
-                      Icons.add_photo_alternate_outlined,
-                      size: 48,
-                      color: _uploading ? AppColors.textMuted : AppColors.primary,
-                    ),
+                    const Icon(Icons.add_photo_alternate_outlined, size: 48, color: AppColors.textMuted),
                     const SizedBox(height: 8),
                     Text(
-                      _uploading ? 'Загрузка...' : 'Добавить фото',
-                      style: TextStyle(
-                        color: _uploading ? AppColors.textMuted : AppColors.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      'Добавить фото',
+                      style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
               ),
             ),
-            if (_imageUrls.isNotEmpty) ...[
+            if (_images.isNotEmpty) ...[
               const SizedBox(height: 12),
               SizedBox(
                 height: 100,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: _imageUrls.length,
-                  itemBuilder: (context, i) {
+                  itemCount: _images.length,
+                  itemBuilder: (context, index) {
                     return Stack(
                       children: [
                         Container(
@@ -202,7 +255,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             image: DecorationImage(
-                              image: NetworkImage(_imageUrls[i]),
+                              image: NetworkImage(_images[index]),
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -211,7 +264,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                           top: 4,
                           right: 12,
                           child: GestureDetector(
-                            onTap: () => _removeImage(i),
+                            onTap: () => _removeImage(index),
                             child: Container(
                               width: 24,
                               height: 24,
@@ -223,7 +276,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                             ),
                           ),
                         ),
-                        if (i == 0)
+                        if (index == 0)
                           Positioned(
                             bottom: 4,
                             left: 4,
@@ -265,42 +318,47 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             ),
             const SizedBox(height: 24),
 
+            // Status (Admin only)
+            if (isAdmin) ...[
+              const Text('Статус', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: ListingStatus.values.map((s) {
+                  final selected = _status == s;
+                  return ChoiceChip(
+                    label: Text(s.label),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _status = s),
+                    selectedColor: AppColors.primary.withOpacity(0.2),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+            ],
+
             // Title
             TextFormField(
-              controller: _titleCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Заголовок',
-                hintText: 'Например: Уютная 2-комнатная квартира',
-              ),
-              textCapitalization: TextCapitalization.sentences,
-              enabled: !_loading,
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Заголовок'),
               validator: (v) => v == null || v.isEmpty ? 'Обязательное поле' : null,
             ),
             const SizedBox(height: 16),
 
             // Description
             TextFormField(
-              controller: _descCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Описание',
-                hintText: 'Опишите особенности объекта...',
-              ),
+              controller: _descriptionController,
+              decoration: const InputDecoration(labelText: 'Описание'),
               maxLines: 4,
-              textCapitalization: TextCapitalization.sentences,
-              enabled: !_loading,
               validator: (v) => v == null || v.isEmpty ? 'Обязательное поле' : null,
             ),
             const SizedBox(height: 16),
 
             // Price
             TextFormField(
-              controller: _priceCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Цена, ₽',
-                prefixIcon: Icon(Icons.attach_money),
-              ),
+              controller: _priceController,
+              decoration: const InputDecoration(labelText: 'Цена, ₽'),
               keyboardType: TextInputType.number,
-              enabled: !_loading,
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Обязательное поле';
                 if (double.tryParse(v) == null) return 'Некорректное число';
@@ -314,25 +372,17 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               children: [
                 Expanded(
                   child: TextFormField(
-                    controller: _roomsCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Комнат',
-                      prefixIcon: Icon(Icons.bed_outlined),
-                    ),
+                    controller: _roomsController,
+                    decoration: const InputDecoration(labelText: 'Комнат'),
                     keyboardType: TextInputType.number,
-                    enabled: !_loading,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: TextFormField(
-                    controller: _areaCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Площадь, м²',
-                      prefixIcon: Icon(Icons.square_foot),
-                    ),
+                    controller: _areaController,
+                    decoration: const InputDecoration(labelText: 'Площадь, м²'),
                     keyboardType: TextInputType.number,
-                    enabled: !_loading,
                   ),
                 ),
               ],
@@ -344,25 +394,17 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               children: [
                 Expanded(
                   child: TextFormField(
-                    controller: _floorCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Этаж',
-                      prefixIcon: Icon(Icons.stairs),
-                    ),
+                    controller: _floorController,
+                    decoration: const InputDecoration(labelText: 'Этаж'),
                     keyboardType: TextInputType.number,
-                    enabled: !_loading,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: TextFormField(
-                    controller: _totalFloorsCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Этажей всего',
-                      prefixIcon: Icon(Icons.apartment),
-                    ),
+                    controller: _totalFloorsController,
+                    decoration: const InputDecoration(labelText: 'Этажей всего'),
                     keyboardType: TextInputType.number,
-                    enabled: !_loading,
                   ),
                 ),
               ],
@@ -371,25 +413,14 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
 
             // Address
             TextFormField(
-              controller: _addressCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Адрес',
-                prefixIcon: Icon(Icons.location_on_outlined),
-                hintText: 'г. Москва, ул. Пушкина, д. 10',
-              ),
-              textCapitalization: TextCapitalization.words,
-              enabled: !_loading,
+              controller: _addressController,
+              decoration: const InputDecoration(labelText: 'Адрес'),
               validator: (v) => v == null || v.isEmpty ? 'Обязательное поле' : null,
             ),
             const SizedBox(height: 24),
 
             // Map
-            const Text('Местоположение на карте', style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            const Text(
-              'Нажмите на карту или перетащите маркер',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-            ),
+            const Text('Местоположение', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -407,19 +438,19 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             ),
             const SizedBox(height: 32),
 
-            // Submit
+            // Save Button
             ElevatedButton(
-              onPressed: _loading ? null : _submit,
+              onPressed: _saving ? null : _save,
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(56),
               ),
-              child: _loading
+              child: _saving
                   ? const SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
-                  : const Text('Опубликовать'),
+                  : const Text('Сохранить изменения'),
             ),
             const SizedBox(height: 32),
           ],
