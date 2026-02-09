@@ -802,6 +802,14 @@ class _ListingCard extends StatelessWidget {
                       color: AppColors.primary,
                     ),
                   ),
+                  if (listing.paymentType == PaymentType.installment && listing.installmentMonthly != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        '📅 ${formatPrice(listing.installmentMonthly!)}/мес',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.amber.shade700),
+                      ),
+                    ),
                   const SizedBox(height: 8),
                   Row(
                     children: [

@@ -1,11 +1,38 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/widgets/location_picker_map.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
+
+String _formatNumber(String value) {
+  final digits = value.replaceAll(RegExp(r'[^\d]'), '');
+  if (digits.isEmpty) return '';
+  final num = int.tryParse(digits);
+  if (num == null) return digits;
+  return num.toString().replaceAllMapped(
+    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+    (m) => '${m[1]} ',
+  );
+}
+
+class _PriceInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    final formatted = _formatNumber(digits);
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
 
 class CreateListingScreen extends StatefulWidget {
   const CreateListingScreen({super.key});
@@ -25,9 +52,12 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   final _areaCtrl = TextEditingController();
   final _floorCtrl = TextEditingController();
   final _totalFloorsCtrl = TextEditingController();
+  final _installmentMonthsCtrl = TextEditingController();
+  final _installmentMonthlyCtrl = TextEditingController();
   final _picker = ImagePicker();
 
   PropertyType _propertyType = PropertyType.apartment;
+  PaymentType _paymentType = PaymentType.cash;
   final List<String> _imageUrls = [];
   double? _lat;
   double? _lng;
@@ -45,6 +75,8 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     _areaCtrl.dispose();
     _floorCtrl.dispose();
     _totalFloorsCtrl.dispose();
+    _installmentMonthsCtrl.dispose();
+    _installmentMonthlyCtrl.dispose();
     super.dispose();
   }
 
@@ -74,10 +106,25 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final price = double.tryParse(_priceCtrl.text);
+    final priceStr = _priceCtrl.text.replaceAll(RegExp(r'[^\d]'), '');
+    final price = double.tryParse(priceStr);
     if (price == null || price < 0) {
       setState(() => _error = 'Укажите корректную цену');
       return;
+    }
+
+    if (_paymentType == PaymentType.installment) {
+      final months = int.tryParse(_installmentMonthsCtrl.text);
+      final monthlyStr = _installmentMonthlyCtrl.text.replaceAll(RegExp(r'[^\d]'), '');
+      final monthly = double.tryParse(monthlyStr);
+      if (months == null || months < 1) {
+        setState(() => _error = 'Укажите срок рассрочки');
+        return;
+      }
+      if (monthly == null || monthly < 1) {
+        setState(() => _error = 'Укажите ежемесячный платёж');
+        return;
+      }
     }
 
     setState(() {
@@ -86,10 +133,18 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     });
 
     try {
+      final monthlyStr = _installmentMonthlyCtrl.text.replaceAll(RegExp(r'[^\d]'), '');
       final listing = await _repo.create(
         title: _titleCtrl.text.trim(),
         description: _descCtrl.text.trim(),
         price: price,
+        paymentType: _paymentType,
+        installmentMonths: _paymentType == PaymentType.installment
+            ? int.tryParse(_installmentMonthsCtrl.text)
+            : null,
+        installmentMonthly: _paymentType == PaymentType.installment
+            ? double.tryParse(monthlyStr)
+            : null,
         address: _addressCtrl.text.trim(),
         propertyType: _propertyType,
         rooms: _roomsCtrl.text.isNotEmpty ? int.tryParse(_roomsCtrl.text) : null,
@@ -292,22 +347,171 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Price
+            // Price with formatting
+            const Text('Стоимость и оплата', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            const SizedBox(height: 12),
             TextFormField(
               controller: _priceCtrl,
               decoration: const InputDecoration(
                 labelText: 'Цена, ₽',
                 prefixIcon: Icon(Icons.attach_money),
+                hintText: '5 000 000',
+                suffixText: '₽',
               ),
               keyboardType: TextInputType.number,
+              inputFormatters: [_PriceInputFormatter()],
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               enabled: !_loading,
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Обязательное поле';
-                if (double.tryParse(v) == null) return 'Некорректное число';
+                final digits = v.replaceAll(RegExp(r'[^\d]'), '');
+                if (double.tryParse(digits) == null) return 'Некорректное число';
                 return null;
               },
             ),
+            Builder(builder: (context) {
+              final digits = _priceCtrl.text.replaceAll(RegExp(r'[^\d]'), '');
+              if (digits.isEmpty) return const SizedBox.shrink();
+              final num = int.tryParse(digits);
+              if (num == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 4, left: 16),
+                child: Text(
+                  '${_formatNumber(digits)} ₽',
+                  style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w500),
+                ),
+              );
+            }),
             const SizedBox(height: 16),
+
+            // Payment Type
+            const Text('Способ оплаты', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Row(
+              children: PaymentType.values.map((type) {
+                final selected = _paymentType == type;
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: type == PaymentType.cash ? 8 : 0, left: type == PaymentType.installment ? 8 : 0),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _paymentType = type),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: selected ? AppColors.primary : Colors.grey.shade300,
+                            width: selected ? 2 : 1,
+                          ),
+                          color: selected ? AppColors.primary.withAlpha(20) : Colors.white,
+                        ),
+                        child: Column(
+                          children: [
+                            Text(type.icon, style: const TextStyle(fontSize: 24)),
+                            const SizedBox(height: 4),
+                            Text(
+                              type.label,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: selected ? AppColors.primary : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+
+            // Installment Details
+            if (_paymentType == PaymentType.installment) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  border: Border.all(color: Colors.amber.shade200),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 18, color: Colors.amber.shade700),
+                        const SizedBox(width: 8),
+                        Text('Условия рассрочки', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.amber.shade800)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _installmentMonthsCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Срок, мес.',
+                              hintText: '12',
+                              prefixIcon: Icon(Icons.calendar_month),
+                            ),
+                            keyboardType: TextInputType.number,
+                            enabled: !_loading,
+                            validator: _paymentType == PaymentType.installment
+                                ? (v) => v == null || v.isEmpty ? 'Обязательно' : null
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _installmentMonthlyCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Платёж/мес, ₽',
+                              hintText: '50 000',
+                              prefixIcon: Icon(Icons.payments_outlined),
+                              suffixText: '₽',
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [_PriceInputFormatter()],
+                            enabled: !_loading,
+                            validator: _paymentType == PaymentType.installment
+                                ? (v) => v == null || v.isEmpty ? 'Обязательно' : null
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Builder(builder: (context) {
+                      final months = int.tryParse(_installmentMonthsCtrl.text);
+                      final monthlyDigits = _installmentMonthlyCtrl.text.replaceAll(RegExp(r'[^\d]'), '');
+                      final monthly = double.tryParse(monthlyDigits);
+                      if (months == null || monthly == null || months < 1 || monthly < 1) {
+                        return const SizedBox.shrink();
+                      }
+                      final total = (months * monthly).round();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Итого за рассрочку: ${_formatNumber(total.toString())} ₽ ($months мес × ${_formatNumber(monthlyDigits)} ₽)',
+                            style: TextStyle(fontSize: 13, color: Colors.amber.shade900, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             // Rooms & Area
             Row(

@@ -310,6 +310,62 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                     color: AppColors.primary,
                                   ),
                                 ),
+
+                                // Payment Info
+                                if (_listing!.paymentType == PaymentType.installment &&
+                                    _listing!.installmentMonths != null &&
+                                    _listing!.installmentMonthly != null) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber.shade50,
+                                      border: Border.all(color: Colors.amber.shade200),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Text('📅', style: TextStyle(fontSize: 16)),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Рассрочка',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.amber.shade800,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          '${_formatPrice(_listing!.installmentMonthly!)}/мес',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.amber.shade900,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'на ${_listing!.installmentMonths} мес. • Итого ${_formatPrice(_listing!.installmentMonths! * _listing!.installmentMonthly!)}',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.amber.shade700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ] else ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '💵 Наличные',
+                                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                                  ),
+                                ],
                                 const SizedBox(height: 12),
 
                                 // Address

@@ -2,6 +2,8 @@ enum PropertyType { apartment, house, room, land, commercial }
 
 enum ListingStatus { active, sold, rented }
 
+enum PaymentType { cash, installment }
+
 extension PropertyTypeExtension on PropertyType {
   String get label {
     switch (this) {
@@ -47,12 +49,35 @@ extension ListingStatusExtension on ListingStatus {
   }
 }
 
+extension PaymentTypeExtension on PaymentType {
+  String get label {
+    switch (this) {
+      case PaymentType.cash:
+        return 'Наличные';
+      case PaymentType.installment:
+        return 'Рассрочка';
+    }
+  }
+
+  String get icon {
+    switch (this) {
+      case PaymentType.cash:
+        return '💵';
+      case PaymentType.installment:
+        return '📅';
+    }
+  }
+}
+
 class Listing {
   Listing({
     required this.id,
     required this.title,
     required this.description,
     required this.price,
+    this.paymentType = PaymentType.cash,
+    this.installmentMonths,
+    this.installmentMonthly,
     required this.address,
     required this.authorId,
     required this.images,
@@ -76,6 +101,9 @@ class Listing {
   final String title;
   final String description;
   final double price;
+  final PaymentType paymentType;
+  final int? installmentMonths;
+  final double? installmentMonthly;
   final String address;
   final String authorId;
   final List<String> images;
@@ -100,6 +128,9 @@ class Listing {
       title: json['title'] as String,
       description: json['description'] as String,
       price: (json['price'] as num).toDouble(),
+      paymentType: _parsePaymentType(json['paymentType'] as String?),
+      installmentMonths: json['installmentMonths'] as int?,
+      installmentMonthly: (json['installmentMonthly'] as num?)?.toDouble(),
       address: json['address'] as String,
       authorId: json['authorId'] as String,
       images: (json['images'] as List<dynamic>?)?.cast<String>() ?? [],
@@ -135,6 +166,15 @@ class Listing {
     }
   }
 
+  static PaymentType _parsePaymentType(String? value) {
+    switch (value) {
+      case 'installment':
+        return PaymentType.installment;
+      default:
+        return PaymentType.cash;
+    }
+  }
+
   static ListingStatus _parseStatus(String? value) {
     switch (value) {
       case 'sold':
@@ -154,6 +194,10 @@ class Listing {
     return status.toString().split('.').last;
   }
 
+  String get paymentTypeValue {
+    return paymentType.toString().split('.').last;
+  }
+
   Listing copyWith({
     bool? isFavorite,
   }) {
@@ -162,6 +206,9 @@ class Listing {
       title: title,
       description: description,
       price: price,
+      paymentType: paymentType,
+      installmentMonths: installmentMonths,
+      installmentMonthly: installmentMonthly,
       address: address,
       authorId: authorId,
       images: images,

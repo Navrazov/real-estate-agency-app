@@ -104,6 +104,9 @@ class ListingsRepository {
     required String title,
     required String description,
     required double price,
+    PaymentType? paymentType,
+    int? installmentMonths,
+    double? installmentMonthly,
     required String address,
     PropertyType? propertyType,
     int? rooms,
@@ -120,6 +123,11 @@ class ListingsRepository {
       'price': price,
       'address': address,
     };
+    if (paymentType != null) {
+      body['paymentType'] = paymentType.toString().split('.').last;
+    }
+    if (installmentMonths != null) body['installmentMonths'] = installmentMonths;
+    if (installmentMonthly != null) body['installmentMonthly'] = installmentMonthly;
     if (propertyType != null) {
       body['propertyType'] = propertyType.toString().split('.').last;
     }
@@ -143,6 +151,9 @@ class ListingsRepository {
     String? title,
     String? description,
     double? price,
+    PaymentType? paymentType,
+    int? installmentMonths,
+    double? installmentMonthly,
     String? address,
     PropertyType? propertyType,
     ListingStatus? status,
@@ -158,6 +169,11 @@ class ListingsRepository {
     if (title != null) body['title'] = title;
     if (description != null) body['description'] = description;
     if (price != null) body['price'] = price;
+    if (paymentType != null) {
+      body['paymentType'] = paymentType.toString().split('.').last;
+    }
+    if (installmentMonths != null) body['installmentMonths'] = installmentMonths;
+    if (installmentMonthly != null) body['installmentMonthly'] = installmentMonthly;
     if (address != null) body['address'] = address;
     if (propertyType != null) {
       body['propertyType'] = propertyType.toString().split('.').last;
