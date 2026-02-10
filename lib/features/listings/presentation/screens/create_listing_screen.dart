@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/widgets/location_picker_map.dart';
+import '../../../../core/widgets/address_picker.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
 
@@ -47,7 +48,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _priceCtrl = TextEditingController();
-  final _addressCtrl = TextEditingController();
+  // _addressCtrl removed — using AddressPicker instead
   final _roomsCtrl = TextEditingController();
   final _areaCtrl = TextEditingController();
   final _floorCtrl = TextEditingController();
@@ -59,6 +60,8 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   PropertyType _propertyType = PropertyType.apartment;
   PaymentType _paymentType = PaymentType.cash;
   final List<String> _imageUrls = [];
+  String _city = '';
+  String _address = '';
   double? _lat;
   double? _lng;
   bool _loading = false;
@@ -70,7 +73,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     _titleCtrl.dispose();
     _descCtrl.dispose();
     _priceCtrl.dispose();
-    _addressCtrl.dispose();
+    // _addressCtrl removed
     _roomsCtrl.dispose();
     _areaCtrl.dispose();
     _floorCtrl.dispose();
@@ -145,7 +148,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
         installmentMonthly: _paymentType == PaymentType.installment
             ? double.tryParse(monthlyStr)
             : null,
-        address: _addressCtrl.text.trim(),
+        address: _address,
         propertyType: _propertyType,
         rooms: _roomsCtrl.text.isNotEmpty ? int.tryParse(_roomsCtrl.text) : null,
         area: _areaCtrl.text.isNotEmpty ? double.tryParse(_areaCtrl.text) : null,
@@ -574,16 +577,14 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             const SizedBox(height: 16),
 
             // Address
-            TextFormField(
-              controller: _addressCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Адрес',
-                prefixIcon: Icon(Icons.location_on_outlined),
-                hintText: 'г. Москва, ул. Пушкина, д. 10',
-              ),
-              textCapitalization: TextCapitalization.words,
+            AddressPicker(
               enabled: !_loading,
-              validator: (v) => v == null || v.isEmpty ? 'Обязательное поле' : null,
+              onCityChanged: (city) => setState(() => _city = city),
+              onAddressChanged: (addr) => setState(() => _address = addr),
+              onLocationSelected: (lat, lng) {
+                _lat = lat;
+                _lng = lng;
+              },
             ),
             const SizedBox(height: 24),
 

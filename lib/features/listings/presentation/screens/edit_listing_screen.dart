@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import 'package:real_estate_app/core/auth/auth_service.dart';
 import 'package:real_estate_app/core/widgets/location_picker_map.dart';
+import 'package:real_estate_app/core/widgets/address_picker.dart';
 import 'package:real_estate_app/features/listings/data/listings_repository.dart';
 import 'package:real_estate_app/features/listings/domain/listing.dart';
 
@@ -57,7 +58,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
-  final _addressController = TextEditingController();
+  // _addressController removed — using AddressPicker
   final _roomsController = TextEditingController();
   final _areaController = TextEditingController();
   final _floorController = TextEditingController();
@@ -69,6 +70,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
   ListingStatus _status = ListingStatus.active;
   PaymentType _paymentType = PaymentType.cash;
   List<String> _images = [];
+  String _city = '';
+  String _address = '';
   double? _lat;
   double? _lng;
 
@@ -83,7 +86,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
-    _addressController.dispose();
+    // _addressController removed
     _roomsController.dispose();
     _areaController.dispose();
     _floorController.dispose();
@@ -101,7 +104,12 @@ class _EditListingScreenState extends State<EditListingScreen> {
         _titleController.text = listing.title;
         _descriptionController.text = listing.description;
         _priceController.text = _formatNumber(listing.price.toStringAsFixed(0));
-        _addressController.text = listing.address;
+        _address = listing.address;
+        // Extract city from address (first part before comma)
+        final addrParts = listing.address.split(',').map((s) => s.trim()).toList();
+        if (addrParts.length > 1) {
+          _city = addrParts[0];
+        }
         _roomsController.text = listing.rooms?.toString() ?? '';
         _areaController.text = listing.area?.toStringAsFixed(0) ?? '';
         _floorController.text = listing.floor?.toString() ?? '';
@@ -187,7 +195,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
         installmentMonthly: _paymentType == PaymentType.installment
             ? double.tryParse(monthlyDigits)
             : null,
-        address: _addressController.text.trim(),
+        address: _address,
         propertyType: _propertyType,
         status: _status,
         rooms: _roomsController.text.isNotEmpty ? int.parse(_roomsController.text) : null,
@@ -580,10 +588,16 @@ class _EditListingScreenState extends State<EditListingScreen> {
             const SizedBox(height: 16),
 
             // Address
-            TextFormField(
-              controller: _addressController,
-              decoration: const InputDecoration(labelText: 'Адрес'),
-              validator: (v) => v == null || v.isEmpty ? 'Обязательное поле' : null,
+            AddressPicker(
+              initialCity: _city,
+              initialAddress: _address,
+              enabled: !_saving,
+              onCityChanged: (city) => setState(() => _city = city),
+              onAddressChanged: (addr) => setState(() => _address = addr),
+              onLocationSelected: (lat, lng) {
+                _lat = lat;
+                _lng = lng;
+              },
             ),
             const SizedBox(height: 24),
 
