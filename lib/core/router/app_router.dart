@@ -7,6 +7,8 @@ import '../../features/listings/presentation/screens/edit_listing_screen.dart';
 import '../../features/listings/presentation/screens/my_listings_screen.dart';
 import '../../features/listings/presentation/screens/favorites_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/chat/presentation/screens/conversations_screen.dart';
+import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../auth/auth_service.dart';
 
 class AppRouter {
@@ -18,7 +20,7 @@ class AppRouter {
       initialLocation: '/',
       redirect: (context, state) {
         if (auth.loading) return null;
-        final protectedRoutes = ['/create', '/my', '/favorites'];
+        final protectedRoutes = ['/create', '/my', '/favorites', '/conversations'];
         final isProtected = protectedRoutes.any(
           (r) => state.matchedLocation == r || state.matchedLocation.startsWith('$r/'),
         );
@@ -62,6 +64,17 @@ class AppRouter {
         GoRoute(
           path: '/favorites',
           builder: (context, state) => const FavoritesScreen(),
+        ),
+        GoRoute(
+          path: '/conversations',
+          builder: (context, state) => const ConversationsScreen(),
+        ),
+        GoRoute(
+          path: '/chat/:conversationId',
+          builder: (context, state) {
+            final conversationId = state.pathParameters['conversationId']!;
+            return ChatScreen(conversationId: conversationId);
+          },
         ),
         GoRoute(
           path: '/login',

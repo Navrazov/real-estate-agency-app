@@ -161,7 +161,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
       if (mounted) {
         context.go('/listing/${listing.id}');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Объявление опубликовано!')),
+          const SnackBar(content: Text('Объявление отправлено на модерацию')),
         );
       }
     } catch (e) {

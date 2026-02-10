@@ -224,7 +224,18 @@ class _ListingCard extends StatelessWidget {
                               text: listing.propertyType.label,
                               color: AppColors.primary,
                             ),
-                            if (listing.status != ListingStatus.active)
+                            if (listing.moderationStatus == ModerationStatus.pending)
+                              _Badge(
+                                text: 'На модерации',
+                                color: Colors.orange,
+                              ),
+                            if (listing.moderationStatus == ModerationStatus.rejected)
+                              _Badge(
+                                text: 'Отклонено',
+                                color: AppColors.error,
+                              ),
+                            if (listing.moderationStatus == ModerationStatus.approved &&
+                                listing.status != ListingStatus.active)
                               _Badge(
                                 text: listing.status.label,
                                 color: listing.status == ListingStatus.sold

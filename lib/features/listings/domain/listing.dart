@@ -1,6 +1,8 @@
 enum PropertyType { apartment, house, room, land, commercial }
 
-enum ListingStatus { active, sold, rented }
+enum ListingStatus { pending, active, sold, rented }
+
+enum ModerationStatus { pending, approved, rejected }
 
 enum PaymentType { cash, installment }
 
@@ -39,12 +41,27 @@ extension PropertyTypeExtension on PropertyType {
 extension ListingStatusExtension on ListingStatus {
   String get label {
     switch (this) {
+      case ListingStatus.pending:
+        return 'На модерации';
       case ListingStatus.active:
         return 'Активно';
       case ListingStatus.sold:
         return 'Продано';
       case ListingStatus.rented:
         return 'Сдано';
+    }
+  }
+}
+
+extension ModerationStatusExtension on ModerationStatus {
+  String get label {
+    switch (this) {
+      case ModerationStatus.pending:
+        return 'Ожидает проверки';
+      case ModerationStatus.approved:
+        return 'Одобрено';
+      case ModerationStatus.rejected:
+        return 'Отклонено';
     }
   }
 }
@@ -87,6 +104,8 @@ class Listing {
     this.floor,
     this.totalFloors,
     this.status = ListingStatus.active,
+    this.moderationStatus = ModerationStatus.pending,
+    this.moderationNote,
     this.views = 0,
     this.authorName,
     this.authorPhone,
@@ -113,6 +132,8 @@ class Listing {
   final int? floor;
   final int? totalFloors;
   final ListingStatus status;
+  final ModerationStatus moderationStatus;
+  final String? moderationNote;
   final int views;
   final String? authorName;
   final String? authorPhone;
@@ -140,6 +161,8 @@ class Listing {
       floor: json['floor'] as int?,
       totalFloors: json['totalFloors'] as int?,
       status: _parseStatus(json['status'] as String?),
+      moderationStatus: _parseModerationStatus(json['moderationStatus'] as String?),
+      moderationNote: json['moderationNote'] as String?,
       views: json['views'] as int? ?? 0,
       authorName: json['authorName'] as String?,
       authorPhone: json['authorPhone'] as String?,
@@ -177,12 +200,25 @@ class Listing {
 
   static ListingStatus _parseStatus(String? value) {
     switch (value) {
+      case 'pending':
+        return ListingStatus.pending;
       case 'sold':
         return ListingStatus.sold;
       case 'rented':
         return ListingStatus.rented;
       default:
         return ListingStatus.active;
+    }
+  }
+
+  static ModerationStatus _parseModerationStatus(String? value) {
+    switch (value) {
+      case 'approved':
+        return ModerationStatus.approved;
+      case 'rejected':
+        return ModerationStatus.rejected;
+      default:
+        return ModerationStatus.pending;
     }
   }
 
@@ -218,6 +254,8 @@ class Listing {
       floor: floor,
       totalFloors: totalFloors,
       status: status,
+      moderationStatus: moderationStatus,
+      moderationNote: moderationNote,
       views: views,
       authorName: authorName,
       authorPhone: authorPhone,

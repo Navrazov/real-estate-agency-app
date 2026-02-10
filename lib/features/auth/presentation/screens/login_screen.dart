@@ -38,11 +38,15 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final auth = AuthServiceScope.of(context);
       if (_isRegister) {
-        await auth.register(
+        final needsVerification = await auth.register(
           _emailCtrl.text.trim(),
           _passCtrl.text,
           name: _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : null,
         );
+        if (needsVerification && mounted) {
+          await _showVerificationDialog();
+          return;
+        }
       } else {
         await auth.login(_emailCtrl.text.trim(), _passCtrl.text);
       }
@@ -54,6 +58,37 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _showVerificationDialog() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: const Icon(Icons.mark_email_read_outlined, size: 48, color: AppColors.primary),
+        title: const Text('Подтвердите email'),
+        content: Text(
+          'Мы отправили письмо с ссылкой для подтверждения на ${_emailCtrl.text.trim()}. '
+          'Перейдите по ссылке в письме, чтобы активировать аккаунт.',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                setState(() {
+                  _isRegister = false;
+                });
+              },
+              child: const Text('Понятно'),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/widgets/listings_map.dart';
+import '../../../chat/data/chat_repository.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
 
@@ -17,6 +18,7 @@ class ListingDetailScreen extends StatefulWidget {
 
 class _ListingDetailScreenState extends State<ListingDetailScreen> {
   final _repo = ListingsRepository();
+  final _chatRepo = ChatRepository();
   Listing? _listing;
   bool _loading = true;
   String? _error;
@@ -581,15 +583,29 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                         ),
                       ),
                     ),
-                    if (_listing!.authorPhone != null) ...[
+                    if (!isOwner && auth.isLoggedIn) ...[
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Could launch phone call
+                          onPressed: () async {
+                            try {
+                              final conv = await _chatRepo.createConversation(
+                                _listing!.authorId,
+                                listingId: _listing!.id,
+                              );
+                              if (mounted) {
+                                context.push('/chat/${conv.id}');
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Ошибка: $e')),
+                                );
+                              }
+                            }
                           },
-                          icon: const Icon(Icons.phone),
-                          label: const Text('Позвонить'),
+                          icon: const Icon(Icons.chat_bubble_outline),
+                          label: const Text('Написать'),
                           style: ElevatedButton.styleFrom(
                             minimumSize: const Size.fromHeight(56),
                           ),

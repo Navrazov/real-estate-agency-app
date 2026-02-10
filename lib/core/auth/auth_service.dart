@@ -10,6 +10,7 @@ class User {
     this.phone,
     this.avatar,
     this.favorites = const [],
+    this.emailVerified = false,
   });
 
   final String id;
@@ -19,6 +20,7 @@ class User {
   final String? phone;
   final String? avatar;
   final List<String> favorites;
+  final bool emailVerified;
 
   String get displayName => name ?? email.split('@').first;
   bool get isAdmin => role == 'admin';
@@ -62,6 +64,7 @@ class AuthService extends ChangeNotifier {
           phone: data['phone'] as String?,
           avatar: data['avatar'] as String?,
           favorites: (data['favorites'] as List<dynamic>?)?.cast<String>() ?? [],
+          emailVerified: data['emailVerified'] as bool? ?? false,
         );
       }
     } catch (_) {
@@ -83,7 +86,8 @@ class AuthService extends ChangeNotifier {
     await _loadUser();
   }
 
-  Future<void> register(String email, String password, {String? name}) async {
+  /// Returns `true` if email verification is required (i.e. emailVerified == false).
+  Future<bool> register(String email, String password, {String? name}) async {
     final body = <String, dynamic>{
       'email': email,
       'password': password,
@@ -97,8 +101,10 @@ class AuthService extends ChangeNotifier {
       (d) => d as Map<String, dynamic>,
       withAuth: false,
     );
+    final emailVerified = (data['user'] as Map<String, dynamic>?)?['emailVerified'] as bool? ?? false;
     await _api.setToken(data['token'] as String);
     await _loadUser();
+    return !emailVerified;
   }
 
   Future<void> logout() async {
@@ -117,6 +123,7 @@ class AuthService extends ChangeNotifier {
         phone: _user!.phone,
         avatar: _user!.avatar,
         favorites: favorites,
+        emailVerified: _user!.emailVerified,
       );
       notifyListeners();
     }
