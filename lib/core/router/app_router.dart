@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../app/main_shell.dart';
 import '../../features/listings/presentation/screens/listings_screen.dart';
 import '../../features/listings/presentation/screens/listing_detail_screen.dart';
 import '../../features/listings/presentation/screens/create_listing_screen.dart';
@@ -10,6 +11,7 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/chat/presentation/screens/conversations_screen.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/profile/presentation/screens/user_profile_screen.dart';
+import '../../features/profile/presentation/screens/profile_menu_screen.dart';
 import '../auth/auth_service.dart';
 
 class AppRouter {
@@ -21,13 +23,7 @@ class AppRouter {
       initialLocation: '/',
       redirect: (context, state) {
         if (auth.loading) return null;
-        final protectedRoutes = ['/create', '/my', '/favorites', '/conversations'];
-        final isProtected = protectedRoutes.any(
-          (r) => state.matchedLocation == r || state.matchedLocation.startsWith('$r/'),
-        );
-        final isEditRoute = state.matchedLocation.contains('/edit');
-        
-        if (!auth.isLoggedIn && (isProtected || isEditRoute)) {
+        if (!auth.isLoggedIn && state.matchedLocation != '/login') {
           return '/login';
         }
         if (auth.isLoggedIn && state.matchedLocation == '/login') {
@@ -36,12 +32,62 @@ class AppRouter {
         return null;
       },
       routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) => const ListingsScreen(),
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) {
+            return MainShell(navigationShell: navigationShell);
+          },
+          branches: [
+            // Tab 0: Catalog
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/',
+                  builder: (context, state) => const ListingsScreen(),
+                ),
+              ],
+            ),
+            // Tab 1: Favorites
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/favorites',
+                  builder: (context, state) => const FavoritesScreen(),
+                ),
+              ],
+            ),
+            // Tab 2: Create Listing
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/create',
+                  builder: (context, state) => const CreateListingScreen(),
+                ),
+              ],
+            ),
+            // Tab 3: Conversations
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/conversations',
+                  builder: (context, state) => const ConversationsScreen(),
+                ),
+              ],
+            ),
+            // Tab 4: Profile
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/profile',
+                  builder: (context, state) => const ProfileMenuScreen(),
+                ),
+              ],
+            ),
+          ],
         ),
+        // Routes that push ON TOP of the shell (no bottom nav)
         GoRoute(
           path: '/listing/:id',
+          parentNavigatorKey: _rootKey,
           builder: (context, state) {
             final id = state.pathParameters['id']!;
             return ListingDetailScreen(listingId: id);
@@ -49,29 +95,20 @@ class AppRouter {
         ),
         GoRoute(
           path: '/listing/:id/edit',
+          parentNavigatorKey: _rootKey,
           builder: (context, state) {
             final id = state.pathParameters['id']!;
             return EditListingScreen(listingId: id);
           },
         ),
         GoRoute(
-          path: '/create',
-          builder: (context, state) => const CreateListingScreen(),
-        ),
-        GoRoute(
           path: '/my',
+          parentNavigatorKey: _rootKey,
           builder: (context, state) => const MyListingsScreen(),
         ),
         GoRoute(
-          path: '/favorites',
-          builder: (context, state) => const FavoritesScreen(),
-        ),
-        GoRoute(
-          path: '/conversations',
-          builder: (context, state) => const ConversationsScreen(),
-        ),
-        GoRoute(
           path: '/chat/:conversationId',
+          parentNavigatorKey: _rootKey,
           builder: (context, state) {
             final conversationId = state.pathParameters['conversationId']!;
             final extra = state.extra;
@@ -92,6 +129,7 @@ class AppRouter {
         ),
         GoRoute(
           path: '/user/:id',
+          parentNavigatorKey: _rootKey,
           builder: (context, state) {
             final id = state.pathParameters['id']!;
             return UserProfileScreen(userId: id);
@@ -99,6 +137,7 @@ class AppRouter {
         ),
         GoRoute(
           path: '/login',
+          parentNavigatorKey: _rootKey,
           builder: (context, state) => const LoginScreen(),
         ),
       ],

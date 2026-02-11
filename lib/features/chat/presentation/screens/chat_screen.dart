@@ -307,46 +307,55 @@ class _ChatScreenState extends State<ChatScreen> {
                                         : Alignment.centerLeft,
                                     child: GestureDetector(
                                       onLongPress: () => _showDeleteMessageSheet(msg, isMine),
-                                      child: Container(
+                                      child: ConstrainedBox(
                                         constraints: BoxConstraints(
                                           maxWidth: MediaQuery.of(context).size.width * 0.75,
                                         ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 10,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isMine
-                                              ? AppColors.primary
-                                              : AppColors.surface,
-                                          borderRadius: BorderRadius.only(
-                                            topLeft: const Radius.circular(16),
-                                            topRight: const Radius.circular(16),
-                                            bottomLeft: Radius.circular(isMine ? 16 : 4),
-                                            bottomRight: Radius.circular(isMine ? 4 : 16),
+                                        child: DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: isMine
+                                                ? AppColors.primary
+                                                : AppColors.surface,
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: const Radius.circular(16),
+                                              topRight: const Radius.circular(16),
+                                              bottomLeft: Radius.circular(isMine ? 16 : 4),
+                                              bottomRight: Radius.circular(isMine ? 4 : 16),
+                                            ),
                                           ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.end,
-                                          children: [
-                                            Text(
-                                              msg.text,
-                                              style: TextStyle(
-                                                color: isMine ? Colors.white : AppColors.textPrimary,
-                                                fontSize: 15,
-                                              ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 8,
                                             ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              _formatTime(msg.createdAt),
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color: isMine
-                                                    ? Colors.white.withOpacity(0.7)
-                                                    : AppColors.textMuted,
-                                              ),
+                                            child: Wrap(
+                                              alignment: WrapAlignment.end,
+                                              spacing: 6,
+                                              runSpacing: 2,
+                                              crossAxisAlignment: WrapCrossAlignment.end,
+                                              children: [
+                                                Text(
+                                                  msg.text,
+                                                  style: TextStyle(
+                                                    color: isMine ? Colors.white : AppColors.textPrimary,
+                                                    fontSize: 15,
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding: const EdgeInsets.only(top: 2),
+                                                  child: Text(
+                                                    _formatTime(msg.createdAt),
+                                                    style: TextStyle(
+                                                      fontSize: 11,
+                                                      color: isMine
+                                                          ? Colors.white.withOpacity(0.7)
+                                                          : AppColors.textMuted,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ],
+                                          ),
                                         ),
                                       ),
                                     ),

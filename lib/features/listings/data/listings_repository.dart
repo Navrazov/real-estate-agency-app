@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:real_estate_app/core/api/api_client.dart';
 import '../domain/listing.dart';
@@ -201,7 +202,15 @@ class ListingsRepository {
     for (final f in files) {
       final bytes = await f.readAsBytes();
       final filename = f.name;
-      multipart.add(http.MultipartFile.fromBytes('images', bytes, filename: filename));
+      final ext = filename.split('.').last.toLowerCase();
+      final mimeType = switch (ext) {
+        'jpg' || 'jpeg' => MediaType('image', 'jpeg'),
+        'png' => MediaType('image', 'png'),
+        'gif' => MediaType('image', 'gif'),
+        'webp' => MediaType('image', 'webp'),
+        _ => MediaType('image', 'jpeg'),
+      };
+      multipart.add(http.MultipartFile.fromBytes('images', bytes, filename: filename, contentType: mimeType));
     }
     return _api.uploadImages(multipart);
   }

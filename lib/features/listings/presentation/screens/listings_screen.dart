@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
-import '../../../../core/socket/socket_service.dart';
 import '../../../../core/widgets/listings_map.dart';
-import '../../../chat/data/chat_repository.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
 
@@ -18,20 +16,14 @@ class ListingsScreen extends StatefulWidget {
   State<ListingsScreen> createState() => _ListingsScreenState();
 }
 
-enum _UserMenuAction { create, logout }
-
 class _ListingsScreenState extends State<ListingsScreen> {
   final _repo = ListingsRepository();
-  final _chatRepo = ChatRepository();
-  final _socketService = SocketService();
   ListingsResponse? _response;
   bool _loading = true;
   String? _error;
   _ViewMode _viewMode = _ViewMode.list;
   String? _selectedId;
   bool _showFilters = false;
-  int _unreadMessages = 0;
-  Timer? _unreadTimer;
 
   // Filters
   final _searchCtrl = TextEditingController();
@@ -46,43 +38,14 @@ class _ListingsScreenState extends State<ListingsScreen> {
   void initState() {
     super.initState();
     _load();
-    _loadUnreadCount();
-    _setupSocket();
-    _unreadTimer = Timer.periodic(const Duration(seconds: 30), (_) => _loadUnreadCount());
-  }
-
-  Future<void> _setupSocket() async {
-    await _socketService.connect();
-    // Instant unread count update from server
-    _socketService.on('unread_count', (data) {
-      if (!mounted) return;
-      final count = (data as Map<String, dynamic>)['count'] as int? ?? 0;
-      setState(() => _unreadMessages = count);
-    });
-    // Also refresh on new_message as fallback
-    _socketService.on('new_message', (_) {
-      if (mounted) _loadUnreadCount();
-    });
   }
 
   @override
   void dispose() {
-    _unreadTimer?.cancel();
-    _socketService.off('unread_count');
-    _socketService.off('new_message');
     _searchCtrl.dispose();
     _minPriceCtrl.dispose();
     _maxPriceCtrl.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadUnreadCount() async {
-    final auth = AuthServiceScope.of(context);
-    if (!auth.isLoggedIn) return;
-    try {
-      final count = await _chatRepo.getUnreadCount();
-      if (mounted) setState(() => _unreadMessages = count);
-    } catch (_) {}
   }
 
   ListingsQuery _buildQuery() {
@@ -185,107 +148,12 @@ class _ListingsScreenState extends State<ListingsScreen> {
             Text('EstateHub'),
           ],
         ),
-        actions: [
-          if (auth.isLoggedIn) ...[
-            IconButton(
-              icon: Badge(
-                isLabelVisible: _unreadMessages > 0,
-                label: Text(
-                  _unreadMessages > 99 ? '99+' : '$_unreadMessages',
-                  style: const TextStyle(fontSize: 10),
-                ),
-                child: const Icon(Icons.chat_bubble_outline),
-              ),
-              onPressed: () async {
-                await context.push('/conversations');
-                if (mounted) _loadUnreadCount();
-              },
-              tooltip: 'Сообщения',
-            ),
-            IconButton(
-              icon: const Icon(Icons.favorite_border),
-              onPressed: () => context.push('/favorites'),
-              tooltip: 'Избранное',
-            ),
-            IconButton(
-              icon: const Icon(Icons.list_alt),
-              onPressed: () => context.push('/my'),
-              tooltip: 'Мои объявления',
-            ),
-            PopupMenuButton(
-              icon: CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                child: Text(
-                  auth.user?.displayName.substring(0, 1).toUpperCase() ?? 'U',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              onSelected: (action) {
-                switch (action) {
-                  case _UserMenuAction.create:
-                    context.push('/create');
-                    break;
-                  case _UserMenuAction.logout:
-                    auth.logout();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Вы вышли из аккаунта')),
-                    );
-                    break;
-                }
-              },
-              itemBuilder: (context) => <PopupMenuEntry<_UserMenuAction>>[
-                PopupMenuItem<_UserMenuAction>(
-                  child: ListTile(
-                    leading: const Icon(Icons.person_outline),
-                    title: Text(auth.user?.displayName ?? 'User'),
-                    subtitle: Text(
-                      auth.user?.email ?? '',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
-                  enabled: false,
-                ),
-                const PopupMenuDivider(),
-                const PopupMenuItem<_UserMenuAction>(
-                  value: _UserMenuAction.create,
-                  child: const ListTile(
-                    leading: Icon(Icons.add_circle_outline),
-                    title: Text('Добавить объявление'),
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
-                ),
-                const PopupMenuItem<_UserMenuAction>(
-                  value: _UserMenuAction.logout,
-                  child: const ListTile(
-                    leading: Icon(Icons.logout, color: AppColors.error),
-                    title: Text('Выйти', style: TextStyle(color: AppColors.error)),
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  ),
-                ),
-              ],
-            ),
-          ] else
-            TextButton.icon(
-              onPressed: () => context.push('/login'),
-              icon: const Icon(Icons.login),
-              label: const Text('Войти'),
-            ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: Column(
         children: [
           // Search & Filters Bar
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: const BoxDecoration(
               color: AppColors.surfaceWhite,
               border: Border(bottom: BorderSide(color: AppColors.border)),
@@ -295,41 +163,48 @@ class _ListingsScreenState extends State<ListingsScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: _searchCtrl,
-                        decoration: InputDecoration(
-                          hintText: 'Поиск по названию или адресу',
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchCtrl.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchCtrl.clear();
-                                    _applyFilters();
-                                  },
-                                )
-                              : null,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: SizedBox(
+                        height: 42,
+                        child: TextField(
+                          controller: _searchCtrl,
+                          decoration: InputDecoration(
+                            hintText: 'Поиск',
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            suffixIcon: _searchCtrl.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, size: 18),
+                                    onPressed: () {
+                                      _searchCtrl.clear();
+                                      _applyFilters();
+                                    },
+                                  )
+                                : null,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                          onSubmitted: (_) => _applyFilters(),
+                          style: const TextStyle(fontSize: 14),
                         ),
-                        onSubmitted: (_) => _applyFilters(),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    IconButton.filled(
-                      onPressed: () => setState(() => _showFilters = !_showFilters),
-                      icon: Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list),
-                      style: IconButton.styleFrom(
-                        backgroundColor: _showFilters
-                            ? AppColors.primary
-                            : AppColors.primary.withOpacity(0.1),
-                        foregroundColor: _showFilters ? Colors.white : AppColors.primary,
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      height: 42,
+                      child: IconButton.filled(
+                        onPressed: () => setState(() => _showFilters = !_showFilters),
+                        icon: Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list, size: 20),
+                        style: IconButton.styleFrom(
+                          backgroundColor: _showFilters
+                              ? AppColors.primary
+                              : AppColors.primary.withOpacity(0.1),
+                          foregroundColor: _showFilters ? Colors.white : AppColors.primary,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     SegmentedButton<_ViewMode>(
                       segments: const [
-                        ButtonSegment(value: _ViewMode.list, icon: Icon(Icons.view_list)),
-                        ButtonSegment(value: _ViewMode.map, icon: Icon(Icons.map)),
+                        ButtonSegment(value: _ViewMode.list, icon: Icon(Icons.view_list, size: 18)),
+                        ButtonSegment(value: _ViewMode.map, icon: Icon(Icons.map, size: 18)),
                       ],
                       selected: {_viewMode},
                       onSelectionChanged: (s) => setState(() => _viewMode = s.first),
@@ -338,7 +213,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
                   ],
                 ),
                 if (_showFilters) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   _buildFiltersPanel(),
                 ],
               ],
@@ -366,17 +241,10 @@ class _ListingsScreenState extends State<ListingsScreen> {
                         ? _buildMapView(markers, listings)
                         : listings.isEmpty
                             ? _buildEmptyState()
-                            : _buildListView(listings, auth),
+                            : _buildGridView(listings, auth),
           ),
         ],
       ),
-      floatingActionButton: auth.isLoggedIn
-          ? FloatingActionButton.extended(
-              onPressed: () => context.push('/create'),
-              icon: const Icon(Icons.add),
-              label: const Text('Добавить'),
-            )
-          : null,
     );
   }
 
@@ -507,36 +375,52 @@ class _ListingsScreenState extends State<ListingsScreen> {
     );
   }
 
-  Widget _buildListView(List<Listing> listings, AuthService auth) {
+  Widget _buildGridView(List<Listing> listings, AuthService auth) {
+    final hasMore = _response != null && _response!.page < _response!.totalPages;
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: listings.length + (_response != null && _response!.page < _response!.totalPages ? 1 : 0),
-        itemBuilder: (context, i) {
-          if (i >= listings.length) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() => _page++);
-                    _load();
-                  },
-                  child: const Text('Загрузить ещё'),
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.all(8),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 0.62,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, i) {
+                  final l = listings[i];
+                  return _CompactListingCard(
+                    listing: l,
+                    onTap: () => context.push('/listing/${l.id}'),
+                    onFavorite: () => _toggleFavorite(l),
+                    formatPrice: _formatPrice,
+                    isLoggedIn: auth.isLoggedIn,
+                  );
+                },
+                childCount: listings.length,
+              ),
+            ),
+          ),
+          if (hasMore)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => _page++);
+                      _load();
+                    },
+                    child: const Text('Загрузить ещё'),
+                  ),
                 ),
               ),
-            );
-          }
-          final l = listings[i];
-          return _ListingCard(
-            listing: l,
-            onTap: () => context.push('/listing/${l.id}'),
-            onFavorite: () => _toggleFavorite(l),
-            formatPrice: _formatPrice,
-            isLoggedIn: auth.isLoggedIn,
-          );
-        },
+            ),
+        ],
       ),
     );
   }
@@ -716,8 +600,9 @@ class _SortChip extends StatelessWidget {
   }
 }
 
-class _ListingCard extends StatelessWidget {
-  const _ListingCard({
+/// Compact card for the 2-column grid, Avito-style.
+class _CompactListingCard extends StatelessWidget {
+  const _CompactListingCard({
     required this.listing,
     required this.onTap,
     required this.onFavorite,
@@ -734,217 +619,129 @@ class _ListingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
+            // Image with aspect ratio 4:3
             Stack(
               children: [
                 AspectRatio(
-                  aspectRatio: 16 / 10,
+                  aspectRatio: 4 / 3,
                   child: listing.images.isNotEmpty
                       ? Image.network(
                           listing.images.first,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
                             color: AppColors.surface,
-                            child: const Center(child: Text('🏠', style: TextStyle(fontSize: 48))),
+                            child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
                           ),
                         )
                       : Container(
                           color: AppColors.surface,
-                          child: const Center(child: Text('🏠', style: TextStyle(fontSize: 48))),
+                          child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
                         ),
                 ),
-                // Badges
+                // Favorite button
                 Positioned(
-                  top: 12,
-                  left: 12,
-                  child: Wrap(
-                    spacing: 8,
-                    children: [
-                      _Badge(text: listing.propertyType.label, color: AppColors.primary),
-                      if (listing.status != ListingStatus.active)
-                        _Badge(
-                          text: listing.status.label,
-                          color: listing.status == ListingStatus.sold
-                              ? AppColors.error
-                              : AppColors.accent,
-                        ),
-                    ],
-                  ),
-                ),
-                // Favorite
-                Positioned(
-                  top: 12,
-                  right: 12,
+                  top: 6,
+                  right: 6,
                   child: GestureDetector(
                     onTap: onFavorite,
                     child: Container(
-                      width: 40,
-                      height: 40,
+                      width: 30,
+                      height: 30,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.9),
                         shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                          ),
-                        ],
                       ),
                       child: Icon(
                         listing.isFavorite ? Icons.favorite : Icons.favorite_border,
+                        size: 16,
                         color: listing.isFavorite ? AppColors.error : AppColors.textMuted,
                       ),
                     ),
                   ),
                 ),
-                // Views
-                Positioned(
-                  bottom: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(12),
+              ],
+            ),
+            // Compact info
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Price
+                    Text(
+                      formatPrice(listing.price),
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                    const SizedBox(height: 2),
+                    // Title
+                    Text(
+                      listing.title,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    // Rooms / Area inline
+                    if (listing.rooms != null || listing.area != null)
+                      Text(
+                        [
+                          if (listing.rooms != null) '${listing.rooms} комн.',
+                          if (listing.area != null) '${listing.area!.toStringAsFixed(0)} м\u00B2',
+                          if (listing.floor != null)
+                            listing.totalFloors != null
+                                ? '${listing.floor}/${listing.totalFloors} эт.'
+                                : '${listing.floor} эт.',
+                        ].join(' \u00B7 '),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const Spacer(),
+                    // Address
+                    Row(
                       children: [
-                        const Icon(Icons.visibility, size: 14, color: Colors.white),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${listing.views}',
-                          style: const TextStyle(color: Colors.white, fontSize: 12),
+                        const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textMuted),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            listing.address,
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    listing.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    formatPrice(listing.price),
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  if (listing.paymentType == PaymentType.installment && listing.installmentMonthly != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        '📅 ${formatPrice(listing.installmentMonthly!)}/мес',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.amber.shade700),
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined, size: 16, color: AppColors.textSecondary),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          listing.address,
-                          style: const TextStyle(color: AppColors.textSecondary),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Features
-                  Wrap(
-                    spacing: 16,
-                    children: [
-                      if (listing.rooms != null)
-                        _Feature(icon: Icons.bed_outlined, text: '${listing.rooms} комн.'),
-                      if (listing.area != null)
-                        _Feature(icon: Icons.square_foot, text: '${listing.area!.toStringAsFixed(0)} м²'),
-                      if (listing.floor != null)
-                        _Feature(
-                          icon: Icons.stairs,
-                          text: listing.totalFloors != null
-                              ? '${listing.floor}/${listing.totalFloors} эт.'
-                              : '${listing.floor} эт.',
-                        ),
-                    ],
-                  ),
-                ],
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.text, required this.color});
-
-  final String text;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _Feature extends StatelessWidget {
-  const _Feature({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 18, color: AppColors.textSecondary),
-        const SizedBox(width: 4),
-        Text(text, style: const TextStyle(color: AppColors.textSecondary)),
-      ],
     );
   }
 }

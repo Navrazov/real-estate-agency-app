@@ -75,10 +75,11 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> login(String email, String password) async {
+  /// Login with identifier (phone or email) and password.
+  Future<void> login(String identifier, String password) async {
     final data = await _api.post<Map<String, dynamic>>(
       '/auth/login',
-      {'email': email, 'password': password},
+      {'email': identifier, 'password': password},
       (d) => d as Map<String, dynamic>,
       withAuth: false,
     );
@@ -86,14 +87,38 @@ class AuthService extends ChangeNotifier {
     await _loadUser();
   }
 
-  /// Returns `true` if email verification is required (i.e. emailVerified == false).
-  Future<bool> register(String email, String password, {String? name}) async {
+  /// Sends verification code to the given phone number.
+  Future<void> sendCode(String phone) async {
+    await _api.post<Map<String, dynamic>>(
+      '/auth/send-code',
+      {'phone': phone},
+      (d) => d as Map<String, dynamic>,
+      withAuth: false,
+    );
+  }
+
+  /// Register with phone, code, password, first/last name, and optional email/avatar.
+  Future<void> register({
+    required String phone,
+    required String code,
+    required String password,
+    required String firstName,
+    required String lastName,
+    String? email,
+    String? avatar,
+  }) async {
     final body = <String, dynamic>{
-      'email': email,
+      'phone': phone,
+      'code': code,
       'password': password,
+      'firstName': firstName,
+      'lastName': lastName,
     };
-    if (name != null && name.isNotEmpty) {
-      body['name'] = name;
+    if (email != null && email.isNotEmpty) {
+      body['email'] = email;
+    }
+    if (avatar != null && avatar.isNotEmpty) {
+      body['avatar'] = avatar;
     }
     final data = await _api.post<Map<String, dynamic>>(
       '/auth/register',
@@ -101,10 +126,8 @@ class AuthService extends ChangeNotifier {
       (d) => d as Map<String, dynamic>,
       withAuth: false,
     );
-    final emailVerified = (data['user'] as Map<String, dynamic>?)?['emailVerified'] as bool? ?? false;
     await _api.setToken(data['token'] as String);
     await _loadUser();
-    return !emailVerified;
   }
 
   Future<void> logout() async {
