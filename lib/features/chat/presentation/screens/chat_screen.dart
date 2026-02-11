@@ -6,9 +6,10 @@ import '../../data/chat_repository.dart';
 import '../../domain/message.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key, required this.conversationId});
+  const ChatScreen({super.key, required this.conversationId, this.listingTitle});
 
   final String conversationId;
+  final String? listingTitle;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -42,7 +43,8 @@ class _ChatScreenState extends State<ChatScreen> {
           _messages.add(msg);
         });
         _scrollToBottom();
-        _repo.markRead(widget.conversationId);
+        // Mark as read via socket for instant badge update
+        _socketService.emit('mark_read', {'conversationId': widget.conversationId});
       }
     });
   }
@@ -68,7 +70,9 @@ class _ChatScreenState extends State<ChatScreen> {
           _loading = false;
         });
         _scrollToBottom();
+        // Mark as read via both REST and socket for instant badge update
         _repo.markRead(widget.conversationId);
+        _socketService.emit('mark_read', {'conversationId': widget.conversationId});
       }
     } catch (e) {
       if (mounted) {
@@ -119,6 +123,58 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _showDeleteMessageSheet(Message msg, bool isMine) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('Удалить у себя'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _deleteMessage(msg.id, forBoth: false);
+              },
+            ),
+            if (isMine)
+              ListTile(
+                leading: const Icon(Icons.delete_forever, color: AppColors.error),
+                title: const Text('Удалить у всех', style: TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _deleteMessage(msg.id, forBoth: true);
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Отмена'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteMessage(String messageId, {required bool forBoth}) async {
+    try {
+      await _repo.deleteMessage(messageId, forBoth: forBoth);
+      if (mounted) {
+        setState(() {
+          _messages.removeWhere((m) => m.id == messageId);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка удаления: $e')),
+        );
+      }
+    }
+  }
+
   String _formatTime(String dateStr) {
     final d = DateTime.tryParse(dateStr);
     if (d == null) return '';
@@ -137,7 +193,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Чат'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Чат'),
+            if (widget.listingTitle != null)
+              Text(
+                widget.listingTitle!,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              ),
+          ],
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -179,46 +245,49 @@ class _ChatScreenState extends State<ChatScreen> {
                                     alignment: isMine
                                         ? Alignment.centerRight
                                         : Alignment.centerLeft,
-                                    child: Container(
-                                      constraints: BoxConstraints(
-                                        maxWidth: MediaQuery.of(context).size.width * 0.75,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isMine
-                                            ? AppColors.primary
-                                            : AppColors.surface,
-                                        borderRadius: BorderRadius.only(
-                                          topLeft: const Radius.circular(16),
-                                          topRight: const Radius.circular(16),
-                                          bottomLeft: Radius.circular(isMine ? 16 : 4),
-                                          bottomRight: Radius.circular(isMine ? 4 : 16),
+                                    child: GestureDetector(
+                                      onLongPress: () => _showDeleteMessageSheet(msg, isMine),
+                                      child: Container(
+                                        constraints: BoxConstraints(
+                                          maxWidth: MediaQuery.of(context).size.width * 0.75,
                                         ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            msg.text,
-                                            style: TextStyle(
-                                              color: isMine ? Colors.white : AppColors.textPrimary,
-                                              fontSize: 15,
-                                            ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isMine
+                                              ? AppColors.primary
+                                              : AppColors.surface,
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: const Radius.circular(16),
+                                            topRight: const Radius.circular(16),
+                                            bottomLeft: Radius.circular(isMine ? 16 : 4),
+                                            bottomRight: Radius.circular(isMine ? 4 : 16),
                                           ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            _formatTime(msg.createdAt),
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: isMine
-                                                  ? Colors.white.withOpacity(0.7)
-                                                  : AppColors.textMuted,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              msg.text,
+                                              style: TextStyle(
+                                                color: isMine ? Colors.white : AppColors.textPrimary,
+                                                fontSize: 15,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              _formatTime(msg.createdAt),
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: isMine
+                                                    ? Colors.white.withOpacity(0.7)
+                                                    : AppColors.textMuted,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),

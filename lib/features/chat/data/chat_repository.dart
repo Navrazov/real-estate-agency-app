@@ -55,4 +55,12 @@ class ChatRepository {
     );
     return result['count'] as int? ?? 0;
   }
+
+  Future<void> deleteMessage(String messageId, {bool forBoth = false}) async {
+    await _api.delete('/chat/messages/$messageId${forBoth ? '?forBoth=true' : ''}');
+  }
+
+  Future<void> deleteConversation(String conversationId, {bool forBoth = false}) async {
+    await _api.delete('/chat/conversations/$conversationId${forBoth ? '?forBoth=true' : ''}');
+  }
 }

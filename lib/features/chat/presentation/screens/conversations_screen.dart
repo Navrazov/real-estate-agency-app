@@ -62,6 +62,57 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     }
   }
 
+  void _showDeleteConversationSheet(Conversation conv) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.delete_outline),
+              title: const Text('Удалить у себя'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _deleteConversation(conv.id, forBoth: false);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_forever, color: AppColors.error),
+              title: const Text('Удалить у всех', style: TextStyle(color: AppColors.error)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _deleteConversation(conv.id, forBoth: true);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Отмена'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteConversation(String conversationId, {required bool forBoth}) async {
+    try {
+      await _repo.deleteConversation(conversationId, forBoth: forBoth);
+      if (mounted) {
+        setState(() {
+          _conversations.removeWhere((c) => c.id == conversationId);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка удаления: $e')),
+        );
+      }
+    }
+  }
+
   String _formatTime(String? dateStr) {
     if (dateStr == null) return '';
     final d = DateTime.tryParse(dateStr);
@@ -181,46 +232,66 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                                     ),
                                   ],
                                 ),
-                                subtitle: Row(
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(
-                                      child: Text(
-                                        conv.lastMessage ?? 'Нет сообщений',
+                                    if (conv.listingTitle != null)
+                                      Text(
+                                        conv.listingTitle!,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: conv.unreadCount > 0
-                                              ? AppColors.textPrimary
-                                              : AppColors.textSecondary,
-                                          fontWeight: conv.unreadCount > 0
-                                              ? FontWeight.w600
-                                              : FontWeight.normal,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.primary,
                                         ),
                                       ),
-                                    ),
-                                    if (conv.unreadCount > 0)
-                                      Container(
-                                        margin: const EdgeInsets.only(left: 8),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          '${conv.unreadCount}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            conv.lastMessage ?? 'Нет сообщений',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: conv.unreadCount > 0
+                                                  ? AppColors.textPrimary
+                                                  : AppColors.textSecondary,
+                                              fontWeight: conv.unreadCount > 0
+                                                  ? FontWeight.w600
+                                                  : FontWeight.normal,
+                                            ),
                                           ),
                                         ),
-                                      ),
+                                        if (conv.unreadCount > 0)
+                                          Container(
+                                            margin: const EdgeInsets.only(left: 8),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              '${conv.unreadCount}',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ],
                                 ),
-                                onTap: () => context.push('/chat/${conv.id}'),
+                                onTap: () async {
+                                  await context.push('/chat/${conv.id}', extra: conv.listingTitle);
+                                  // Refresh conversations when returning from chat
+                                  if (mounted) _load();
+                                },
+                                onLongPress: () => _showDeleteConversationSheet(conv),
                               );
                             },
                           ),

@@ -593,8 +593,15 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 _listing!.authorId,
                                 listingId: _listing!.id,
                               );
+                              // Send auto-message with listing context if new conversation
+                              if (conv.lastMessage == null) {
+                                await _chatRepo.sendMessage(
+                                  conv.id,
+                                  'Здравствуйте! Интересует объявление: ${_listing!.title}',
+                                );
+                              }
                               if (mounted) {
-                                context.push('/chat/${conv.id}');
+                                context.push('/chat/${conv.id}', extra: conv.listingTitle);
                               }
                             } catch (e) {
                               if (mounted) {

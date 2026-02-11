@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
+import '../../../../core/socket/socket_service.dart';
 import '../../../../core/widgets/listings_map.dart';
+import '../../../chat/data/chat_repository.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
 
@@ -19,12 +22,16 @@ enum _UserMenuAction { create, logout }
 
 class _ListingsScreenState extends State<ListingsScreen> {
   final _repo = ListingsRepository();
+  final _chatRepo = ChatRepository();
+  final _socketService = SocketService();
   ListingsResponse? _response;
   bool _loading = true;
   String? _error;
   _ViewMode _viewMode = _ViewMode.list;
   String? _selectedId;
   bool _showFilters = false;
+  int _unreadMessages = 0;
+  Timer? _unreadTimer;
 
   // Filters
   final _searchCtrl = TextEditingController();
@@ -39,14 +46,43 @@ class _ListingsScreenState extends State<ListingsScreen> {
   void initState() {
     super.initState();
     _load();
+    _loadUnreadCount();
+    _setupSocket();
+    _unreadTimer = Timer.periodic(const Duration(seconds: 30), (_) => _loadUnreadCount());
+  }
+
+  Future<void> _setupSocket() async {
+    await _socketService.connect();
+    // Instant unread count update from server
+    _socketService.on('unread_count', (data) {
+      if (!mounted) return;
+      final count = (data as Map<String, dynamic>)['count'] as int? ?? 0;
+      setState(() => _unreadMessages = count);
+    });
+    // Also refresh on new_message as fallback
+    _socketService.on('new_message', (_) {
+      if (mounted) _loadUnreadCount();
+    });
   }
 
   @override
   void dispose() {
+    _unreadTimer?.cancel();
+    _socketService.off('unread_count');
+    _socketService.off('new_message');
     _searchCtrl.dispose();
     _minPriceCtrl.dispose();
     _maxPriceCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadUnreadCount() async {
+    final auth = AuthServiceScope.of(context);
+    if (!auth.isLoggedIn) return;
+    try {
+      final count = await _chatRepo.getUnreadCount();
+      if (mounted) setState(() => _unreadMessages = count);
+    } catch (_) {}
   }
 
   ListingsQuery _buildQuery() {
@@ -151,6 +187,21 @@ class _ListingsScreenState extends State<ListingsScreen> {
         ),
         actions: [
           if (auth.isLoggedIn) ...[
+            IconButton(
+              icon: Badge(
+                isLabelVisible: _unreadMessages > 0,
+                label: Text(
+                  _unreadMessages > 99 ? '99+' : '$_unreadMessages',
+                  style: const TextStyle(fontSize: 10),
+                ),
+                child: const Icon(Icons.chat_bubble_outline),
+              ),
+              onPressed: () async {
+                await context.push('/conversations');
+                if (mounted) _loadUnreadCount();
+              },
+              tooltip: 'Сообщения',
+            ),
             IconButton(
               icon: const Icon(Icons.favorite_border),
               onPressed: () => context.push('/favorites'),

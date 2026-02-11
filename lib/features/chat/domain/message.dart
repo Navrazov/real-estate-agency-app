@@ -2,6 +2,7 @@ class Conversation {
   final String id;
   final List<String> participants;
   final String? listingId;
+  final String? listingTitle;
   final String? lastMessage;
   final String? lastMessageAt;
   final OtherUser? otherUser;
@@ -11,6 +12,7 @@ class Conversation {
     required this.id,
     required this.participants,
     this.listingId,
+    this.listingTitle,
     this.lastMessage,
     this.lastMessageAt,
     this.otherUser,
@@ -22,6 +24,7 @@ class Conversation {
       id: json['id'] as String,
       participants: (json['participants'] as List<dynamic>).cast<String>(),
       listingId: json['listingId'] as String?,
+      listingTitle: json['listingTitle'] as String?,
       lastMessage: json['lastMessage'] as String?,
       lastMessageAt: json['lastMessageAt'] as String?,
       otherUser: json['otherUser'] != null
@@ -69,7 +72,7 @@ class Message {
 
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
-      id: json['_id'] as String,
+      id: (json['id'] ?? json['_id']) as String,
       conversationId: json['conversationId'] as String,
       senderId: json['senderId'] as String,
       text: json['text'] as String,

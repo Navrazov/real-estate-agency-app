@@ -73,7 +73,8 @@ class AppRouter {
           path: '/chat/:conversationId',
           builder: (context, state) {
             final conversationId = state.pathParameters['conversationId']!;
-            return ChatScreen(conversationId: conversationId);
+            final listingTitle = state.extra as String?;
+            return ChatScreen(conversationId: conversationId, listingTitle: listingTitle);
           },
         ),
         GoRoute(
