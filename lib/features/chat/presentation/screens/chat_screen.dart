@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/socket/socket_service.dart';
 import '../../data/chat_repository.dart';
 import '../../domain/message.dart';
+import '../../../profile/data/profile_repository.dart';
+import '../../../profile/domain/user_profile.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key, required this.conversationId, this.listingTitle});
+  const ChatScreen({super.key, required this.conversationId, this.listingTitle, this.otherUserId});
 
   final String conversationId;
   final String? listingTitle;
+  final String? otherUserId;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -17,6 +21,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _repo = ChatRepository();
+  final _profileRepo = ProfileRepository();
   final _socketService = SocketService();
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
@@ -25,12 +30,35 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _loading = true;
   bool _sending = false;
   String? _error;
+  UserProfile? _otherUserProfile;
 
   @override
   void initState() {
     super.initState();
     _load();
     _setupSocket();
+    _loadOtherUser();
+  }
+
+  Future<void> _loadOtherUser() async {
+    if (widget.otherUserId == null) return;
+    try {
+      final profile = await _profileRepo.getProfile(widget.otherUserId!);
+      if (mounted) setState(() => _otherUserProfile = profile);
+    } catch (_) {}
+  }
+
+  String _formatLastSeen(String? dateStr, bool online) {
+    if (online) return 'в сети';
+    if (dateStr == null) return '';
+    final d = DateTime.tryParse(dateStr);
+    if (d == null) return '';
+    final now = DateTime.now();
+    final diff = now.difference(d);
+    if (diff.inMinutes < 2) return 'в сети';
+    if (diff.inMinutes < 60) return 'был(а) ${diff.inMinutes} мин. назад';
+    if (diff.inHours < 24) return 'был(а) ${diff.inHours} ч. назад';
+    return 'был(а) ${d.day}.${d.month.toString().padLeft(2, '0')}';
   }
 
   Future<void> _setupSocket() async {
@@ -197,16 +225,44 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Чат'),
-            if (widget.listingTitle != null)
-              Text(
-                widget.listingTitle!,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
-              ),
-          ],
+        title: GestureDetector(
+          onTap: widget.otherUserId != null
+              ? () => context.push('/user/${widget.otherUserId}')
+              : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_otherUserProfile?.displayName ?? 'Чат'),
+              if (_otherUserProfile != null)
+                Row(
+                  children: [
+                    if (_otherUserProfile!.online || _formatLastSeen(_otherUserProfile!.lastSeen, _otherUserProfile!.online) == 'в сети')
+                      Container(
+                        width: 8,
+                        height: 8,
+                        margin: const EdgeInsets.only(right: 4),
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    Text(
+                      _formatLastSeen(_otherUserProfile!.lastSeen, _otherUserProfile!.online),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.normal,
+                        color: _otherUserProfile!.online ? Colors.green : null,
+                      ),
+                    ),
+                  ],
+                )
+              else if (widget.listingTitle != null)
+                Text(
+                  widget.listingTitle!,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+                ),
+            ],
+          ),
         ),
       ),
       body: _loading

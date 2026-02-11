@@ -483,65 +483,68 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 // Author
                                 if (_listing!.authorName != null) ...[
                                   const SizedBox(height: 24),
-                                  Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surfaceWhite,
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(color: AppColors.border),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 24,
-                                          backgroundColor: AppColors.primary.withOpacity(0.1),
-                                          child: Text(
-                                            _listing!.authorName!.substring(0, 1).toUpperCase(),
-                                            style: const TextStyle(
-                                              color: AppColors.primary,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 18,
+                                  GestureDetector(
+                                    onTap: () => context.push('/user/${_listing!.authorId}'),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surfaceWhite,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: AppColors.border),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 24,
+                                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                                            child: Text(
+                                              _listing!.authorName!.substring(0, 1).toUpperCase(),
+                                              style: const TextStyle(
+                                                color: AppColors.primary,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 18,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              const Text(
-                                                'Продавец',
-                                                style: TextStyle(
-                                                  color: AppColors.textMuted,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                              Text(
-                                                _listing!.authorName!,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                              if (_listing!.authorPhone != null)
-                                                Text(
-                                                  _listing!.authorPhone!,
-                                                  style: const TextStyle(
-                                                    color: AppColors.primary,
-                                                    fontSize: 14,
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                const Text(
+                                                  'Продавец',
+                                                  style: TextStyle(
+                                                    color: AppColors.textMuted,
+                                                    fontSize: 12,
                                                   ),
                                                 ),
-                                            ],
+                                                Text(
+                                                  _listing!.authorName!,
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                                if (_listing!.authorPhone != null)
+                                                  Text(
+                                                    _listing!.authorPhone!,
+                                                    style: const TextStyle(
+                                                      color: AppColors.primary,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        if (_listing!.authorPhone != null)
-                                          IconButton.filled(
-                                            onPressed: () {
-                                              // Could launch phone call
-                                            },
-                                            icon: const Icon(Icons.phone),
-                                          ),
-                                      ],
+                                          if (_listing!.authorPhone != null)
+                                            IconButton.filled(
+                                              onPressed: () {
+                                                // Could launch phone call
+                                              },
+                                              icon: const Icon(Icons.phone),
+                                            ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -601,7 +604,10 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 );
                               }
                               if (mounted) {
-                                context.push('/chat/${conv.id}', extra: conv.listingTitle);
+                                context.push('/chat/${conv.id}', extra: {
+                                  'listingTitle': conv.listingTitle,
+                                  'otherUserId': _listing!.authorId,
+                                });
                               }
                             } catch (e) {
                               if (mounted) {

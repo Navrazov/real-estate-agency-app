@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -93,7 +92,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     });
 
     try {
-      final urls = await _repo.uploadImages(files.map((f) => File(f.path)).toList());
+      final urls = await _repo.uploadImages(files);
       setState(() => _imageUrls.addAll(urls));
     } catch (e) {
       setState(() => _error = e.toString());

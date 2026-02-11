@@ -39,14 +39,18 @@ class OtherUser {
   final String id;
   final String? name;
   final String email;
+  final String? lastSeen;
+  final bool online;
 
-  OtherUser({required this.id, this.name, required this.email});
+  OtherUser({required this.id, this.name, required this.email, this.lastSeen, this.online = false});
 
   factory OtherUser.fromJson(Map<String, dynamic> json) {
     return OtherUser(
       id: json['id'] as String,
       name: json['name'] as String?,
       email: json['email'] as String,
+      lastSeen: json['lastSeen'] as String?,
+      online: json['online'] as bool? ?? false,
     );
   }
 

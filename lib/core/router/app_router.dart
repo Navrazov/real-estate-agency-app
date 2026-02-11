@@ -9,6 +9,7 @@ import '../../features/listings/presentation/screens/favorites_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/chat/presentation/screens/conversations_screen.dart';
 import '../../features/chat/presentation/screens/chat_screen.dart';
+import '../../features/profile/presentation/screens/user_profile_screen.dart';
 import '../auth/auth_service.dart';
 
 class AppRouter {
@@ -73,8 +74,27 @@ class AppRouter {
           path: '/chat/:conversationId',
           builder: (context, state) {
             final conversationId = state.pathParameters['conversationId']!;
-            final listingTitle = state.extra as String?;
-            return ChatScreen(conversationId: conversationId, listingTitle: listingTitle);
+            final extra = state.extra;
+            String? listingTitle;
+            String? otherUserId;
+            if (extra is Map<String, String?>) {
+              listingTitle = extra['listingTitle'];
+              otherUserId = extra['otherUserId'];
+            } else if (extra is String) {
+              listingTitle = extra;
+            }
+            return ChatScreen(
+              conversationId: conversationId,
+              listingTitle: listingTitle,
+              otherUserId: otherUserId,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/user/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id']!;
+            return UserProfileScreen(userId: id);
           },
         ),
         GoRoute(

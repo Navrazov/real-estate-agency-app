@@ -1,5 +1,5 @@
-import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:real_estate_app/core/api/api_client.dart';
 import '../domain/listing.dart';
 
@@ -196,10 +196,12 @@ class ListingsRepository {
     return Listing.fromJson(data);
   }
 
-  Future<List<String>> uploadImages(List<File> files) async {
+  Future<List<String>> uploadImages(List<XFile> files) async {
     final multipart = <http.MultipartFile>[];
     for (final f in files) {
-      multipart.add(await http.MultipartFile.fromPath('images', f.path));
+      final bytes = await f.readAsBytes();
+      final filename = f.name;
+      multipart.add(http.MultipartFile.fromBytes('images', bytes, filename: filename));
     }
     return _api.uploadImages(multipart);
   }

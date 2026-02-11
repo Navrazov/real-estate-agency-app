@@ -203,16 +203,36 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                                   ? displayName[0].toUpperCase()
                                   : '?';
 
+                              final isOnline = conv.otherUser?.online ?? false;
+
                               return ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                                  child: Text(
-                                    initial,
-                                    style: const TextStyle(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.bold,
+                                leading: Stack(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                                      child: Text(
+                                        initial,
+                                        style: const TextStyle(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    if (isOnline)
+                                      Positioned(
+                                        right: 0,
+                                        bottom: 0,
+                                        child: Container(
+                                          width: 12,
+                                          height: 12,
+                                          decoration: BoxDecoration(
+                                            color: Colors.green,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.white, width: 2),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                                 title: Row(
                                   children: [
@@ -287,7 +307,10 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                                   ],
                                 ),
                                 onTap: () async {
-                                  await context.push('/chat/${conv.id}', extra: conv.listingTitle);
+                                  await context.push('/chat/${conv.id}', extra: {
+                                    'listingTitle': conv.listingTitle,
+                                    'otherUserId': conv.otherUser?.id,
+                                  });
                                   // Refresh conversations when returning from chat
                                   if (mounted) _load();
                                 },
