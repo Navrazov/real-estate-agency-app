@@ -4,8 +4,8 @@ import '../api/api_client.dart';
 class User {
   User({
     required this.id,
-    required this.email,
     required this.role,
+    this.email,
     this.name,
     this.phone,
     this.avatar,
@@ -14,7 +14,7 @@ class User {
   });
 
   final String id;
-  final String email;
+  final String? email;
   final String role;
   final String? name;
   final String? phone;
@@ -22,7 +22,7 @@ class User {
   final List<String> favorites;
   final bool emailVerified;
 
-  String get displayName => name ?? email.split('@').first;
+  String get displayName => name ?? email?.split('@').first ?? phone ?? 'Пользователь';
   bool get isAdmin => role == 'admin';
 }
 
@@ -58,7 +58,7 @@ class AuthService extends ChangeNotifier {
       } else {
         _user = User(
           id: data['id'] as String,
-          email: data['email'] as String,
+          email: data['email'] as String?,
           role: data['role'] as String,
           name: data['name'] as String?,
           phone: data['phone'] as String?,
@@ -77,9 +77,13 @@ class AuthService extends ChangeNotifier {
 
   /// Login with identifier (phone or email) and password.
   Future<void> login(String identifier, String password) async {
+    final isPhone = identifier.startsWith('+') || RegExp(r'^\d{7,}$').hasMatch(identifier);
     final data = await _api.post<Map<String, dynamic>>(
       '/auth/login',
-      {'email': identifier, 'password': password},
+      {
+        if (isPhone) 'phone': identifier else 'email': identifier,
+        'password': password,
+      },
       (d) => d as Map<String, dynamic>,
       withAuth: false,
     );
@@ -97,14 +101,23 @@ class AuthService extends ChangeNotifier {
     );
   }
 
-  /// Register with phone, code, password, first/last name, and optional email/avatar.
+  /// Verify SMS code without consuming it.
+  Future<void> verifySmsCode(String phone, String code) async {
+    await _api.post<Map<String, dynamic>>(
+      '/auth/verify-code',
+      {'phone': phone, 'code': code},
+      (d) => d as Map<String, dynamic>,
+      withAuth: false,
+    );
+  }
+
+  /// Register with phone, code, password, first/last name, and optional avatar.
   Future<void> register({
     required String phone,
     required String code,
     required String password,
     required String firstName,
     required String lastName,
-    String? email,
     String? avatar,
   }) async {
     final body = <String, dynamic>{
@@ -114,9 +127,6 @@ class AuthService extends ChangeNotifier {
       'firstName': firstName,
       'lastName': lastName,
     };
-    if (email != null && email.isNotEmpty) {
-      body['email'] = email;
-    }
     if (avatar != null && avatar.isNotEmpty) {
       body['avatar'] = avatar;
     }
@@ -127,6 +137,44 @@ class AuthService extends ChangeNotifier {
       withAuth: false,
     );
     await _api.setToken(data['token'] as String);
+    await _loadUser();
+  }
+
+  /// Send verification code to the given email (authenticated).
+  Future<void> sendEmailCode(String email) async {
+    await _api.post<Map<String, dynamic>>(
+      '/users/me/email/send-code',
+      {'email': email},
+      (d) => d as Map<String, dynamic>,
+    );
+  }
+
+  /// Verify email with code (authenticated), then refresh user.
+  Future<void> verifyEmailCode(String email, String code) async {
+    await _api.post<Map<String, dynamic>>(
+      '/users/me/email/verify',
+      {'email': email, 'code': code},
+      (d) => d as Map<String, dynamic>,
+    );
+    await _loadUser();
+  }
+
+  /// Send verification code for phone change (authenticated).
+  Future<void> sendPhoneChangeCode(String phone) async {
+    await _api.post<Map<String, dynamic>>(
+      '/users/me/phone/send-code',
+      {'phone': phone},
+      (d) => d as Map<String, dynamic>,
+    );
+  }
+
+  /// Verify phone change with code (authenticated), then refresh user.
+  Future<void> verifyPhoneChange(String phone, String code) async {
+    await _api.post<Map<String, dynamic>>(
+      '/users/me/phone/verify',
+      {'phone': phone, 'code': code},
+      (d) => d as Map<String, dynamic>,
+    );
     await _loadUser();
   }
 

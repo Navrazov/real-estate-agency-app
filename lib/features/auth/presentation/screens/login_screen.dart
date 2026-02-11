@@ -69,15 +69,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
   final _regPassCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
 
   bool _isRegister = false;
   bool _loading = false;
   bool _obscurePassword = true;
+  bool _obscureRegPassword = true;
   bool _codeSent = false;
   bool _sendingCode = false;
+  int _regStep = 1; // 1 = phone verification, 2 = personal info
   String? _error;
-  String? _avatarUrl;
+  Uint8List? _avatarBytes;
+  String? _avatarFileName;
 
   final _picker = ImagePicker();
   final _apiClient = ApiClient();
@@ -91,7 +93,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _regPassCtrl.dispose();
-    _emailCtrl.dispose();
     super.dispose();
   }
 
@@ -134,32 +135,75 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _pickAvatar() async {
-    final file = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 512, maxHeight: 512);
+    final file = await _picker.pickImage(
+        source: ImageSource.gallery, maxWidth: 512, maxHeight: 512);
     if (file == null) return;
 
-    setState(() => _loading = true);
     try {
       final bytes = await file.readAsBytes();
-      final ext = file.name.split('.').last.toLowerCase();
-      final mimeType = switch (ext) {
-        'jpg' || 'jpeg' => MediaType('image', 'jpeg'),
-        'png' => MediaType('image', 'png'),
-        'gif' => MediaType('image', 'gif'),
-        'webp' => MediaType('image', 'webp'),
-        _ => MediaType('image', 'jpeg'),
-      };
-      final multipart = http.MultipartFile.fromBytes('images', bytes, filename: file.name, contentType: mimeType);
-      final urls = await _apiClient.uploadImages([multipart]);
-      if (urls.isNotEmpty && mounted) {
-        setState(() => _avatarUrl = urls.first);
+      if (mounted) {
+        setState(() {
+          _avatarBytes = bytes;
+          _avatarFileName = file.name;
+        });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _error = 'Ошибка загрузки аватара: ${e.toString().replaceFirst("Exception: ", "")}');
+        setState(() => _error =
+            'Ошибка выбора фото: ${e.toString().replaceFirst("Exception: ", "")}');
       }
-    } finally {
-      if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _uploadAvatar() async {
+    if (_avatarBytes == null || _avatarFileName == null) return;
+    final ext = _avatarFileName!.split('.').last.toLowerCase();
+    final mimeType = switch (ext) {
+      'jpg' || 'jpeg' => MediaType('image', 'jpeg'),
+      'png' => MediaType('image', 'png'),
+      'gif' => MediaType('image', 'gif'),
+      'webp' => MediaType('image', 'webp'),
+      _ => MediaType('image', 'jpeg'),
+    };
+    final multipart = http.MultipartFile.fromBytes('images', _avatarBytes!,
+        filename: _avatarFileName!, contentType: mimeType);
+    final urls = await _apiClient.uploadImages([multipart]);
+    if (urls.isNotEmpty) {
+      await _apiClient.patch('/users/me', {'avatar': urls.first},
+          (d) => d as Map<String, dynamic>);
+    }
+  }
+
+  Future<void> _goToStep2() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final auth = AuthServiceScope.of(context);
+      await auth.verifySmsCode(_rawPhone(), _codeCtrl.text.trim());
+      if (mounted) {
+        setState(() {
+          _regStep = 2;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  void _goBackToStep1() {
+    setState(() {
+      _regStep = 1;
+      _error = null;
+    });
   }
 
   Future<void> _submit() async {
@@ -178,16 +222,21 @@ class _LoginScreenState extends State<LoginScreen> {
           password: _regPassCtrl.text,
           firstName: _firstNameCtrl.text.trim(),
           lastName: _lastNameCtrl.text.trim(),
-          email: _emailCtrl.text.trim().isNotEmpty ? _emailCtrl.text.trim() : null,
-          avatar: _avatarUrl,
         );
+        // Upload avatar after registration (now we have a token)
+        try {
+          await _uploadAvatar();
+        } catch (_) {
+          // Avatar upload failed but registration succeeded
+        }
       } else {
         await auth.login(_identifierCtrl.text.trim(), _passCtrl.text);
       }
       if (mounted) context.go('/');
     } catch (e) {
       if (mounted) {
-        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+        setState(
+            () => _error = e.toString().replaceFirst('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -237,14 +286,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 24),
                     Text(
                       'EstateHub',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineMedium
+                          ?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _isRegister ? 'Создайте аккаунт' : 'Войдите в аккаунт',
+                      _isRegister
+                          ? (_regStep == 1
+                              ? 'Шаг 1: Подтверждение телефона'
+                              : 'Шаг 2: Личные данные')
+                          : 'Войдите в аккаунт',
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 16,
@@ -261,49 +317,102 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.error.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                          border: Border.all(
+                              color: AppColors.error.withOpacity(0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline, color: AppColors.error),
+                            const Icon(Icons.error_outline,
+                                color: AppColors.error),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 _error!,
-                                style: const TextStyle(color: AppColors.error),
+                                style:
+                                    const TextStyle(color: AppColors.error),
                               ),
                             ),
                           ],
                         ),
                       ),
 
-                    if (_isRegister) ..._buildRegisterFields() else ..._buildLoginFields(),
+                    if (_isRegister)
+                      ...(_regStep == 1
+                          ? _buildRegisterStep1()
+                          : _buildRegisterStep2())
+                    else
+                      ..._buildLoginFields(),
 
                     const SizedBox(height: 24),
 
-                    // Submit Button
-                    ElevatedButton(
-                      onPressed: _loading ? null : _submit,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(56),
+                    // Submit / Next button
+                    if (!_isRegister) ...[
+                      ElevatedButton(
+                        onPressed: _loading ? null : _submit,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(56),
+                        ),
+                        child: _loading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Войти'),
                       ),
-                      child: _loading
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                            )
-                          : Text(_isRegister ? 'Создать аккаунт' : 'Войти'),
-                    ),
+                    ] else if (_regStep == 1) ...[
+                      ElevatedButton(
+                        onPressed:
+                            (_loading || !_codeSent) ? null : _goToStep2,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(56),
+                        ),
+                        child: _loading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Далее'),
+                      ),
+                    ] else ...[
+                      ElevatedButton(
+                        onPressed: _loading ? null : _submit,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(56),
+                        ),
+                        child: _loading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Создать аккаунт'),
+                      ),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: TextButton(
+                          onPressed: _loading ? null : _goBackToStep1,
+                          child: const Text('Назад'),
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: 16),
 
-                    // Toggle
+                    // Toggle login/register
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          _isRegister ? 'Уже есть аккаунт?' : 'Нет аккаунта?',
-                          style: const TextStyle(color: AppColors.textSecondary),
+                          _isRegister
+                              ? 'Уже есть аккаунт?'
+                              : 'Нет аккаунта?',
+                          style:
+                              const TextStyle(color: AppColors.textSecondary),
                         ),
                         TextButton(
                           onPressed: _loading
@@ -312,8 +421,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                     _isRegister = !_isRegister;
                                     _error = null;
                                     _codeSent = false;
+                                    _regStep = 1;
                                   }),
-                          child: Text(_isRegister ? 'Войти' : 'Регистрация'),
+                          child: Text(
+                              _isRegister ? 'Войти' : 'Регистрация'),
                         ),
                       ],
                     ),
@@ -356,9 +467,12 @@ class _LoginScreenState extends State<LoginScreen> {
           hintText: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
           suffixIcon: IconButton(
             icon: Icon(
-              _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+              _obscurePassword
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
             ),
-            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+            onPressed: () =>
+                setState(() => _obscurePassword = !_obscurePassword),
           ),
         ),
         obscureText: _obscurePassword,
@@ -372,31 +486,9 @@ class _LoginScreenState extends State<LoginScreen> {
     ];
   }
 
-  List<Widget> _buildRegisterFields() {
+  /// Step 1: Phone number + verification code
+  List<Widget> _buildRegisterStep1() {
     return [
-      // Avatar
-      Center(
-        child: GestureDetector(
-          onTap: _loading ? null : _pickAvatar,
-          child: CircleAvatar(
-            radius: 40,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
-            backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
-            child: _avatarUrl == null
-                ? const Icon(Icons.camera_alt_outlined, size: 32, color: AppColors.primary)
-                : null,
-          ),
-        ),
-      ),
-      const SizedBox(height: 8),
-      const Center(
-        child: Text(
-          'Добавить фото',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-        ),
-      ),
-      const SizedBox(height: 16),
-
       // Phone
       TextFormField(
         controller: _phoneCtrl,
@@ -453,6 +545,37 @@ class _LoginScreenState extends State<LoginScreen> {
           },
         ),
       ],
+    ];
+  }
+
+  /// Step 2: Password, name, avatar
+  List<Widget> _buildRegisterStep2() {
+    return [
+      // Password
+      TextFormField(
+        controller: _regPassCtrl,
+        decoration: InputDecoration(
+          labelText: 'Пароль',
+          prefixIcon: const Icon(Icons.lock_outline),
+          hintText: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscureRegPassword
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+            ),
+            onPressed: () =>
+                setState(() => _obscureRegPassword = !_obscureRegPassword),
+          ),
+        ),
+        obscureText: _obscureRegPassword,
+        enabled: !_loading,
+        validator: (v) {
+          if (v == null || v.isEmpty) return 'Введите пароль';
+          if (v.length < 4) return 'Минимум 4 символа';
+          return null;
+        },
+      ),
       const SizedBox(height: 16),
 
       // First name
@@ -487,43 +610,30 @@ class _LoginScreenState extends State<LoginScreen> {
           return null;
         },
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: 20),
 
-      // Password
-      TextFormField(
-        controller: _regPassCtrl,
-        decoration: InputDecoration(
-          labelText: 'Пароль',
-          prefixIcon: const Icon(Icons.lock_outline),
-          hintText: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
-          suffixIcon: IconButton(
-            icon: Icon(
-              _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-            ),
-            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+      // Avatar upload (optional)
+      Center(
+        child: GestureDetector(
+          onTap: _loading ? null : _pickAvatar,
+          child: CircleAvatar(
+            radius: 40,
+            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundImage:
+                _avatarBytes != null ? MemoryImage(_avatarBytes!) : null,
+            child: _avatarBytes == null
+                ? const Icon(Icons.camera_alt_outlined,
+                    size: 32, color: AppColors.primary)
+                : null,
           ),
         ),
-        obscureText: _obscurePassword,
-        enabled: !_loading,
-        validator: (v) {
-          if (v == null || v.isEmpty) return 'Введите пароль';
-          if (v.length < 4) return 'Минимум 4 символа';
-          return null;
-        },
       ),
-      const SizedBox(height: 16),
-
-      // Email (optional)
-      TextFormField(
-        controller: _emailCtrl,
-        decoration: const InputDecoration(
-          labelText: 'Email (необязательно)',
-          prefixIcon: Icon(Icons.email_outlined),
-          hintText: 'your@email.com',
+      const SizedBox(height: 8),
+      const Center(
+        child: Text(
+          'Добавить фото (необязательно)',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
-        keyboardType: TextInputType.emailAddress,
-        autocorrect: false,
-        enabled: !_loading,
       ),
     ];
   }

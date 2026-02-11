@@ -95,7 +95,7 @@ class ProfileMenuScreen extends StatelessWidget {
           _MenuTile(
             icon: Icons.settings_outlined,
             title: 'Настройки',
-            onTap: () {},
+            onTap: () => context.push('/settings'),
           ),
           _MenuTile(
             icon: Icons.help_outline,
