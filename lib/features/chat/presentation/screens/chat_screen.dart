@@ -165,6 +165,10 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _messages.removeWhere((m) => m.id == messageId);
         });
+        // If no messages left, server auto-hides the conversation — go back
+        if (_messages.isEmpty && mounted) {
+          Navigator.of(context).pop();
+        }
       }
     } catch (e) {
       if (mounted) {
