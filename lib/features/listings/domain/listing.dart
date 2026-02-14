@@ -1,4 +1,6 @@
-enum PropertyType { apartment, house, room, land, commercial }
+enum PropertyType { apartment, house, land, commercial }
+
+enum ApartmentType { newBuilding, secondary }
 
 enum ListingStatus { pending, active, sold, rented }
 
@@ -13,8 +15,6 @@ extension PropertyTypeExtension on PropertyType {
         return 'Квартира';
       case PropertyType.house:
         return 'Дом';
-      case PropertyType.room:
-        return 'Комната';
       case PropertyType.land:
         return 'Участок';
       case PropertyType.commercial:
@@ -28,12 +28,43 @@ extension PropertyTypeExtension on PropertyType {
         return '🏢';
       case PropertyType.house:
         return '🏠';
-      case PropertyType.room:
-        return '🚪';
       case PropertyType.land:
         return '🌳';
       case PropertyType.commercial:
         return '🏪';
+    }
+  }
+
+  String get apiValue {
+    return toString().split('.').last;
+  }
+}
+
+extension ApartmentTypeExtension on ApartmentType {
+  String get label {
+    switch (this) {
+      case ApartmentType.newBuilding:
+        return 'Новостройка';
+      case ApartmentType.secondary:
+        return 'Вторичка';
+    }
+  }
+
+  String get icon {
+    switch (this) {
+      case ApartmentType.newBuilding:
+        return '🏗️';
+      case ApartmentType.secondary:
+        return '🏢';
+    }
+  }
+
+  String get apiValue {
+    switch (this) {
+      case ApartmentType.newBuilding:
+        return 'new';
+      case ApartmentType.secondary:
+        return 'secondary';
     }
   }
 }
@@ -99,6 +130,9 @@ class Listing {
     required this.authorId,
     required this.images,
     this.propertyType = PropertyType.apartment,
+    this.apartmentType,
+    this.developer,
+    this.complex,
     this.rooms,
     this.area,
     this.floor,
@@ -127,6 +161,9 @@ class Listing {
   final String authorId;
   final List<String> images;
   final PropertyType propertyType;
+  final ApartmentType? apartmentType;
+  final String? developer;
+  final String? complex;
   final int? rooms;
   final double? area;
   final int? floor;
@@ -156,6 +193,9 @@ class Listing {
       authorId: json['authorId'] as String,
       images: (json['images'] as List<dynamic>?)?.cast<String>() ?? [],
       propertyType: _parsePropertyType(json['propertyType'] as String?),
+      apartmentType: _parseApartmentType(json['apartmentType'] as String?),
+      developer: json['developer'] as String?,
+      complex: json['complex'] as String?,
       rooms: json['rooms'] as int?,
       area: (json['area'] as num?)?.toDouble(),
       floor: json['floor'] as int?,
@@ -178,14 +218,23 @@ class Listing {
     switch (value) {
       case 'house':
         return PropertyType.house;
-      case 'room':
-        return PropertyType.room;
       case 'land':
         return PropertyType.land;
       case 'commercial':
         return PropertyType.commercial;
       default:
         return PropertyType.apartment;
+    }
+  }
+
+  static ApartmentType? _parseApartmentType(String? value) {
+    switch (value) {
+      case 'new':
+        return ApartmentType.newBuilding;
+      case 'secondary':
+        return ApartmentType.secondary;
+      default:
+        return null;
     }
   }
 
@@ -249,6 +298,9 @@ class Listing {
       authorId: authorId,
       images: images,
       propertyType: propertyType,
+      apartmentType: apartmentType,
+      developer: developer,
+      complex: complex,
       rooms: rooms,
       area: area,
       floor: floor,
@@ -266,6 +318,13 @@ class Listing {
       updatedAt: updatedAt,
     );
   }
+}
+
+class FilterOptions {
+  final List<String> developers;
+  final List<String> complexes;
+
+  FilterOptions({required this.developers, required this.complexes});
 }
 
 class ListingsResponse {

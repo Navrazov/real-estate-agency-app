@@ -54,9 +54,12 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   final _totalFloorsCtrl = TextEditingController();
   final _installmentMonthsCtrl = TextEditingController();
   final _installmentMonthlyCtrl = TextEditingController();
+  final _developerCtrl = TextEditingController();
+  final _complexCtrl = TextEditingController();
   final _picker = ImagePicker();
 
   PropertyType _propertyType = PropertyType.apartment;
+  ApartmentType? _apartmentType;
   PaymentType _paymentType = PaymentType.cash;
   final List<String> _imageUrls = [];
   String _city = '';
@@ -79,6 +82,8 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     _totalFloorsCtrl.dispose();
     _installmentMonthsCtrl.dispose();
     _installmentMonthlyCtrl.dispose();
+    _developerCtrl.dispose();
+    _complexCtrl.dispose();
     super.dispose();
   }
 
@@ -107,6 +112,11 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_imageUrls.isEmpty) {
+      setState(() => _error = 'Добавьте хотя бы одну фотографию');
+      return;
+    }
 
     final priceStr = _priceCtrl.text.replaceAll(RegExp(r'[^\d]'), '');
     final price = double.tryParse(priceStr);
@@ -153,7 +163,10 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
         area: _areaCtrl.text.isNotEmpty ? double.tryParse(_areaCtrl.text) : null,
         floor: _floorCtrl.text.isNotEmpty ? int.tryParse(_floorCtrl.text) : null,
         totalFloors: _totalFloorsCtrl.text.isNotEmpty ? int.tryParse(_totalFloorsCtrl.text) : null,
-        images: _imageUrls.isEmpty ? null : _imageUrls,
+        images: _imageUrls,
+        apartmentType: _propertyType == PropertyType.apartment ? _apartmentType : null,
+        developer: _propertyType == PropertyType.apartment ? _developerCtrl.text.trim() : null,
+        complex: _propertyType == PropertyType.apartment ? _complexCtrl.text.trim() : null,
         lat: _lat,
         lng: _lng,
       );
@@ -214,7 +227,10 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               ),
 
             // Photos
-            const Text('Фотографии', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text.rich(TextSpan(children: [
+              const TextSpan(text: 'Фотографии', style: TextStyle(fontWeight: FontWeight.w600)),
+              TextSpan(text: ' *', style: TextStyle(color: AppColors.error)),
+            ])),
             const SizedBox(height: 8),
             GestureDetector(
               onTap: _uploading ? null : _pickImages,
@@ -237,6 +253,14 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                       style: TextStyle(
                         color: _uploading ? AppColors.textMuted : AppColors.primary,
                         fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Минимум 1 фото',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
                       ),
                     ),
                   ],
@@ -322,6 +346,46 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             ),
             const SizedBox(height: 24),
 
+            // Apartment Type (only for apartments)
+            if (_propertyType == PropertyType.apartment) ...[
+              const Text('Тип квартиры', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: ApartmentType.values.map((type) {
+                  final selected = _apartmentType == type;
+                  return ChoiceChip(
+                    label: Text('${type.icon} ${type.label}'),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _apartmentType = type),
+                    selectedColor: AppColors.primary.withOpacity(0.2),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _developerCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Застройщик',
+                  hintText: 'Название застройщика',
+                ),
+                textCapitalization: TextCapitalization.sentences,
+                enabled: !_loading,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _complexCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Жилой комплекс',
+                  hintText: 'Название ЖК',
+                ),
+                textCapitalization: TextCapitalization.sentences,
+                enabled: !_loading,
+              ),
+              const SizedBox(height: 24),
+            ],
+
             // Title
             TextFormField(
               controller: _titleCtrl,
@@ -354,9 +418,9 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _priceCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Цена, ₽',
-                prefixIcon: Icon(Icons.attach_money),
+              decoration: InputDecoration(
+                labelText: _paymentType == PaymentType.installment ? 'Первый взнос, ₽' : 'Цена, ₽',
+                prefixIcon: const Icon(Icons.attach_money),
                 hintText: '5 000 000',
                 suffixText: '₽',
               ),

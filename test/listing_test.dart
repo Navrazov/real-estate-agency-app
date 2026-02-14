@@ -147,7 +147,6 @@ void main() {
     test('label returns Russian text', () {
       expect(PropertyType.apartment.label, 'Квартира');
       expect(PropertyType.house.label, 'Дом');
-      expect(PropertyType.room.label, 'Комната');
       expect(PropertyType.land.label, 'Участок');
       expect(PropertyType.commercial.label, 'Коммерция');
     });
@@ -155,7 +154,6 @@ void main() {
     test('icon returns emoji', () {
       expect(PropertyType.apartment.icon, '🏢');
       expect(PropertyType.house.icon, '🏠');
-      expect(PropertyType.room.icon, '🚪');
       expect(PropertyType.land.icon, '🌳');
       expect(PropertyType.commercial.icon, '🏪');
     });

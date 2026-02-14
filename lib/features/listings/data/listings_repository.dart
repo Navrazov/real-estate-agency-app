@@ -7,6 +7,10 @@ import '../domain/listing.dart';
 class ListingsQuery {
   final String? search;
   final PropertyType? propertyType;
+  final ApartmentType? apartmentType;
+  final PaymentType? paymentType;
+  final String? developer;
+  final String? complex;
   final ListingStatus? status;
   final double? minPrice;
   final double? maxPrice;
@@ -26,6 +30,10 @@ class ListingsQuery {
   ListingsQuery({
     this.search,
     this.propertyType,
+    this.apartmentType,
+    this.paymentType,
+    this.developer,
+    this.complex,
     this.status,
     this.minPrice,
     this.maxPrice,
@@ -47,8 +55,16 @@ class ListingsQuery {
     final m = <String, String>{};
     if (search != null && search!.isNotEmpty) m['search'] = search!;
     if (propertyType != null) {
-      m['propertyType'] = propertyType.toString().split('.').last;
+      m['propertyType'] = propertyType!.apiValue;
     }
+    if (apartmentType != null) {
+      m['apartmentType'] = apartmentType!.apiValue;
+    }
+    if (paymentType != null) {
+      m['paymentType'] = paymentType.toString().split('.').last;
+    }
+    if (developer != null && developer!.isNotEmpty) m['developer'] = developer!;
+    if (complex != null && complex!.isNotEmpty) m['complex'] = complex!;
     if (status != null) {
       m['status'] = status.toString().split('.').last;
     }
@@ -74,6 +90,17 @@ class ListingsRepository {
   ListingsRepository({ApiClient? api}) : _api = api ?? ApiClient();
 
   final ApiClient _api;
+
+  Future<FilterOptions> getFilterOptions() async {
+    final data = await _api.get<Map<String, dynamic>>(
+      '/listings/filter-options',
+      (d) => d as Map<String, dynamic>,
+    );
+    return FilterOptions(
+      developers: (data['developers'] as List<dynamic>?)?.cast<String>() ?? [],
+      complexes: (data['complexes'] as List<dynamic>?)?.cast<String>() ?? [],
+    );
+  }
 
   Future<ListingsResponse> getAll({ListingsQuery? query}) async {
     final params = query?.toParams();
@@ -110,11 +137,14 @@ class ListingsRepository {
     double? installmentMonthly,
     required String address,
     PropertyType? propertyType,
+    ApartmentType? apartmentType,
+    String? developer,
+    String? complex,
     int? rooms,
     double? area,
     int? floor,
     int? totalFloors,
-    List<String>? images,
+    required List<String> images,
     double? lat,
     double? lng,
   }) async {
@@ -123,6 +153,7 @@ class ListingsRepository {
       'description': description,
       'price': price,
       'address': address,
+      'images': images,
     };
     if (paymentType != null) {
       body['paymentType'] = paymentType.toString().split('.').last;
@@ -130,13 +161,17 @@ class ListingsRepository {
     if (installmentMonths != null) body['installmentMonths'] = installmentMonths;
     if (installmentMonthly != null) body['installmentMonthly'] = installmentMonthly;
     if (propertyType != null) {
-      body['propertyType'] = propertyType.toString().split('.').last;
+      body['propertyType'] = propertyType.apiValue;
     }
+    if (apartmentType != null) {
+      body['apartmentType'] = apartmentType.apiValue;
+    }
+    if (developer != null && developer.isNotEmpty) body['developer'] = developer;
+    if (complex != null && complex.isNotEmpty) body['complex'] = complex;
     if (rooms != null) body['rooms'] = rooms;
     if (area != null) body['area'] = area;
     if (floor != null) body['floor'] = floor;
     if (totalFloors != null) body['totalFloors'] = totalFloors;
-    if (images != null && images.isNotEmpty) body['images'] = images;
     if (lat != null) body['lat'] = lat;
     if (lng != null) body['lng'] = lng;
     final data = await _api.post<Map<String, dynamic>>(
@@ -157,6 +192,9 @@ class ListingsRepository {
     double? installmentMonthly,
     String? address,
     PropertyType? propertyType,
+    ApartmentType? apartmentType,
+    String? developer,
+    String? complex,
     ListingStatus? status,
     int? rooms,
     double? area,
@@ -177,8 +215,13 @@ class ListingsRepository {
     if (installmentMonthly != null) body['installmentMonthly'] = installmentMonthly;
     if (address != null) body['address'] = address;
     if (propertyType != null) {
-      body['propertyType'] = propertyType.toString().split('.').last;
+      body['propertyType'] = propertyType.apiValue;
     }
+    if (apartmentType != null) {
+      body['apartmentType'] = apartmentType.apiValue;
+    }
+    if (developer != null) body['developer'] = developer;
+    if (complex != null) body['complex'] = complex;
     if (status != null) {
       body['status'] = status.toString().split('.').last;
     }

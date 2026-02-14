@@ -28,16 +28,33 @@ class _ListingsScreenState extends State<ListingsScreen> {
   // Filters
   final _searchCtrl = TextEditingController();
   PropertyType? _propertyType;
+  ApartmentType? _apartmentType;
+  PaymentType? _paymentType;
+  String? _developer;
+  String? _complex;
   final _minPriceCtrl = TextEditingController();
   final _maxPriceCtrl = TextEditingController();
+  final _minRoomsCtrl = TextEditingController();
+  final _maxRoomsCtrl = TextEditingController();
+  final _minAreaCtrl = TextEditingController();
+  final _maxAreaCtrl = TextEditingController();
   String _sortBy = 'date';
   String _sortOrder = 'desc';
   int _page = 1;
+  FilterOptions _filterOptions = FilterOptions(developers: [], complexes: []);
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadFilterOptions();
+  }
+
+  Future<void> _loadFilterOptions() async {
+    try {
+      final options = await _repo.getFilterOptions();
+      if (mounted) setState(() => _filterOptions = options);
+    } catch (_) {}
   }
 
   @override
@@ -45,6 +62,10 @@ class _ListingsScreenState extends State<ListingsScreen> {
     _searchCtrl.dispose();
     _minPriceCtrl.dispose();
     _maxPriceCtrl.dispose();
+    _minRoomsCtrl.dispose();
+    _maxRoomsCtrl.dispose();
+    _minAreaCtrl.dispose();
+    _maxAreaCtrl.dispose();
     super.dispose();
   }
 
@@ -52,8 +73,16 @@ class _ListingsScreenState extends State<ListingsScreen> {
     return ListingsQuery(
       search: _searchCtrl.text.isNotEmpty ? _searchCtrl.text : null,
       propertyType: _propertyType,
+      apartmentType: _propertyType == PropertyType.apartment ? _apartmentType : null,
+      paymentType: _paymentType,
+      developer: _developer,
+      complex: _complex,
       minPrice: double.tryParse(_minPriceCtrl.text),
       maxPrice: double.tryParse(_maxPriceCtrl.text),
+      minRooms: int.tryParse(_minRoomsCtrl.text),
+      maxRooms: int.tryParse(_maxRoomsCtrl.text),
+      minArea: double.tryParse(_minAreaCtrl.text),
+      maxArea: double.tryParse(_maxAreaCtrl.text),
       sortBy: _sortBy,
       sortOrder: _sortOrder,
       page: _page,
@@ -85,8 +114,16 @@ class _ListingsScreenState extends State<ListingsScreen> {
     setState(() {
       _searchCtrl.clear();
       _propertyType = null;
+      _apartmentType = null;
+      _paymentType = null;
+      _developer = null;
+      _complex = null;
       _minPriceCtrl.clear();
       _maxPriceCtrl.clear();
+      _minRoomsCtrl.clear();
+      _maxRoomsCtrl.clear();
+      _minAreaCtrl.clear();
+      _maxAreaCtrl.clear();
       _sortBy = 'date';
       _sortOrder = 'desc';
       _page = 1;
@@ -260,7 +297,10 @@ class _ListingsScreenState extends State<ListingsScreen> {
                 label: 'Все',
                 selected: _propertyType == null,
                 onTap: () {
-                  setState(() => _propertyType = null);
+                  setState(() {
+                    _propertyType = null;
+                    _apartmentType = null;
+                  });
                   _applyFilters();
                 },
               ),
@@ -268,22 +308,136 @@ class _ListingsScreenState extends State<ListingsScreen> {
                     label: '${type.icon} ${type.label}',
                     selected: _propertyType == type,
                     onTap: () {
-                      setState(() => _propertyType = type);
+                      setState(() {
+                        _propertyType = type;
+                        if (type != PropertyType.apartment) _apartmentType = null;
+                      });
                       _applyFilters();
                     },
                   )),
             ],
           ),
         ),
+
+        // Apartment Type (only when apartment selected)
+        if (_propertyType == PropertyType.apartment) ...[
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _FilterChip(
+                  label: 'Любой',
+                  selected: _apartmentType == null,
+                  onTap: () {
+                    setState(() => _apartmentType = null);
+                    _applyFilters();
+                  },
+                ),
+                ...ApartmentType.values.map((type) => _FilterChip(
+                      label: '${type.icon} ${type.label}',
+                      selected: _apartmentType == type,
+                      onTap: () {
+                        setState(() => _apartmentType = type);
+                        _applyFilters();
+                      },
+                    )),
+              ],
+            ),
+          ),
+        ],
+
+        // Payment Type
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(right: 8),
+                child: Text('Оплата:', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+              ),
+              _FilterChip(
+                label: 'Любая',
+                selected: _paymentType == null,
+                onTap: () {
+                  setState(() => _paymentType = null);
+                  _applyFilters();
+                },
+              ),
+              ...PaymentType.values.map((type) => _FilterChip(
+                    label: '${type.icon} ${type.label}',
+                    selected: _paymentType == type,
+                    onTap: () {
+                      setState(() => _paymentType = type);
+                      _applyFilters();
+                    },
+                  )),
+            ],
+          ),
+        ),
+
+        // Developer & Complex dropdowns
         const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                key: ValueKey('dev_$_developer'),
+                initialValue: _developer,
+                decoration: const InputDecoration(
+                  labelText: 'Застройщик',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('Все')),
+                  ..._filterOptions.developers.map((d) =>
+                    DropdownMenuItem(value: d, child: Text(d, overflow: TextOverflow.ellipsis)),
+                  ),
+                ],
+                onChanged: _filterOptions.developers.isEmpty ? null : (v) {
+                  setState(() => _developer = v);
+                  _applyFilters();
+                },
+                isExpanded: true,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                key: ValueKey('cpx_$_complex'),
+                initialValue: _complex,
+                decoration: const InputDecoration(
+                  labelText: 'ЖК',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('Все')),
+                  ..._filterOptions.complexes.map((c) =>
+                    DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis)),
+                  ),
+                ],
+                onChanged: _filterOptions.complexes.isEmpty ? null : (v) {
+                  setState(() => _complex = v);
+                  _applyFilters();
+                },
+                isExpanded: true,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Price
         Row(
           children: [
             Expanded(
               child: TextField(
                 controller: _minPriceCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Цена от',
-                  prefixIcon: Icon(Icons.attach_money),
+                decoration: InputDecoration(
+                  labelText: _paymentType == PaymentType.installment ? 'Первый взнос от' : 'Цена от',
+                  prefixIcon: const Icon(Icons.attach_money),
                 ),
                 keyboardType: TextInputType.number,
                 onSubmitted: (_) => _applyFilters(),
@@ -293,9 +447,62 @@ class _ListingsScreenState extends State<ListingsScreen> {
             Expanded(
               child: TextField(
                 controller: _maxPriceCtrl,
+                decoration: InputDecoration(
+                  labelText: _paymentType == PaymentType.installment ? 'Первый взнос до' : 'Цена до',
+                  prefixIcon: const Icon(Icons.attach_money),
+                ),
+                keyboardType: TextInputType.number,
+                onSubmitted: (_) => _applyFilters(),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Rooms & Area
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _minRoomsCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'Цена до',
-                  prefixIcon: Icon(Icons.attach_money),
+                  labelText: 'Комнат от',
+                  isDense: true,
+                ),
+                keyboardType: TextInputType.number,
+                onSubmitted: (_) => _applyFilters(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: _maxRoomsCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Комнат до',
+                  isDense: true,
+                ),
+                keyboardType: TextInputType.number,
+                onSubmitted: (_) => _applyFilters(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: _minAreaCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'м² от',
+                  isDense: true,
+                ),
+                keyboardType: TextInputType.number,
+                onSubmitted: (_) => _applyFilters(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: _maxAreaCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'м² до',
+                  isDense: true,
                 ),
                 keyboardType: TextInputType.number,
                 onSubmitted: (_) => _applyFilters(),
@@ -488,6 +695,11 @@ class _ListingsScreenState extends State<ListingsScreen> {
                                     style: const TextStyle(fontWeight: FontWeight.w600),
                                   ),
                                   const SizedBox(height: 4),
+                                  if (l.paymentType == PaymentType.installment)
+                                    Text(
+                                      'Первый взнос',
+                                      style: TextStyle(fontSize: 10, color: Colors.amber.shade700, fontWeight: FontWeight.w600),
+                                    ),
                                   Text(
                                     _formatPrice(l.price),
                                     style: const TextStyle(
@@ -676,6 +888,11 @@ class _CompactListingCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Price
+                    if (listing.paymentType == PaymentType.installment)
+                      const Text(
+                        'Первый взнос',
+                        style: TextStyle(fontSize: 10, color: Colors.amber, fontWeight: FontWeight.w600),
+                      ),
                     Text(
                       formatPrice(listing.price),
                       style: const TextStyle(

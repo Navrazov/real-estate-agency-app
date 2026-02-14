@@ -255,6 +255,11 @@ class _ListingCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
+                        if (listing.paymentType == PaymentType.installment)
+                          Text(
+                            'Первый взнос',
+                            style: TextStyle(fontSize: 11, color: Colors.amber.shade700, fontWeight: FontWeight.w600),
+                          ),
                         Text(
                           formatPrice(listing.price),
                           style: const TextStyle(

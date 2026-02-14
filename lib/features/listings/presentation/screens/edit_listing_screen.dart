@@ -64,8 +64,11 @@ class _EditListingScreenState extends State<EditListingScreen> {
   final _totalFloorsController = TextEditingController();
   final _installmentMonthsController = TextEditingController();
   final _installmentMonthlyController = TextEditingController();
+  final _developerController = TextEditingController();
+  final _complexController = TextEditingController();
 
   PropertyType _propertyType = PropertyType.apartment;
+  ApartmentType? _apartmentType;
   ListingStatus _status = ListingStatus.active;
   PaymentType _paymentType = PaymentType.cash;
   List<String> _images = [];
@@ -92,6 +95,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
     _totalFloorsController.dispose();
     _installmentMonthsController.dispose();
     _installmentMonthlyController.dispose();
+    _developerController.dispose();
+    _complexController.dispose();
     super.dispose();
   }
 
@@ -123,6 +128,9 @@ class _EditListingScreenState extends State<EditListingScreen> {
           _installmentMonthlyController.text = _formatNumber(listing.installmentMonthly!.toStringAsFixed(0));
         }
         _images = List.from(listing.images);
+        _apartmentType = listing.apartmentType;
+        _developerController.text = listing.developer ?? '';
+        _complexController.text = listing.complex ?? '';
         _lat = listing.lat;
         _lng = listing.lng;
         _loading = false;
@@ -153,6 +161,11 @@ class _EditListingScreenState extends State<EditListingScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_images.isEmpty) {
+      setState(() => _error = 'Добавьте хотя бы одну фотографию');
+      return;
+    }
 
     final priceDigits = _priceController.text.replaceAll(RegExp(r'[^\d]'), '');
     final price = double.tryParse(priceDigits);
@@ -196,6 +209,9 @@ class _EditListingScreenState extends State<EditListingScreen> {
             : null,
         address: _address,
         propertyType: _propertyType,
+        apartmentType: _propertyType == PropertyType.apartment ? _apartmentType : null,
+        developer: _propertyType == PropertyType.apartment ? _developerController.text.trim() : null,
+        complex: _propertyType == PropertyType.apartment ? _complexController.text.trim() : null,
         status: _status,
         rooms: _roomsController.text.isNotEmpty ? int.parse(_roomsController.text) : null,
         area: _areaController.text.isNotEmpty ? double.parse(_areaController.text) : null,
@@ -286,7 +302,14 @@ class _EditListingScreenState extends State<EditListingScreen> {
               ),
 
             // Photos
-            const Text('Фотографии', style: TextStyle(fontWeight: FontWeight.w600)),
+            Row(
+              children: [
+                const Text('Фотографии', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(' *', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+                const SizedBox(width: 8),
+                Text('Минимум 1 фото', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+              ],
+            ),
             const SizedBox(height: 8),
             GestureDetector(
               onTap: _pickImages,
@@ -370,22 +393,56 @@ class _EditListingScreenState extends State<EditListingScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Status (Admin only)
-            if (isAdmin) ...[
-              const Text('Статус', style: TextStyle(fontWeight: FontWeight.w600)),
+            // Apartment Type (only for apartments)
+            if (_propertyType == PropertyType.apartment) ...[
+              const Text('Тип квартиры', style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: ListingStatus.values.map((s) {
-                  final selected = _status == s;
+                children: ApartmentType.values.map((type) {
+                  final selected = _apartmentType == type;
                   return ChoiceChip(
-                    label: Text(s.label),
+                    label: Text('${type.icon} ${type.label}'),
                     selected: selected,
-                    onSelected: (_) => setState(() => _status = s),
+                    onSelected: (_) => setState(() => _apartmentType = type),
                     selectedColor: AppColors.primary.withAlpha(51),
                   );
                 }).toList(),
               ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _developerController,
+                decoration: const InputDecoration(labelText: 'Застройщик'),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _complexController,
+                decoration: const InputDecoration(labelText: 'Жилой комплекс'),
+              ),
+              const SizedBox(height: 24),
+            ],
+
+            // Status (Admin only)
+            if (isAdmin) ...[
+              const Text('Статус', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Builder(builder: (context) {
+                final statusValues = _listing?.moderationStatus == ModerationStatus.approved
+                    ? ListingStatus.values.where((s) => s != ListingStatus.pending).toList()
+                    : ListingStatus.values;
+                return Wrap(
+                  spacing: 8,
+                  children: statusValues.map((s) {
+                    final selected = _status == s;
+                    return ChoiceChip(
+                      label: Text(s.label),
+                      selected: selected,
+                      onSelected: (_) => setState(() => _status = s),
+                      selectedColor: AppColors.primary.withAlpha(51),
+                    );
+                  }).toList(),
+                );
+              }),
               const SizedBox(height: 24),
             ],
 
@@ -411,9 +468,9 @@ class _EditListingScreenState extends State<EditListingScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _priceController,
-              decoration: const InputDecoration(
-                labelText: 'Цена, ₽',
-                prefixIcon: Icon(Icons.attach_money),
+              decoration: InputDecoration(
+                labelText: _paymentType == PaymentType.installment ? 'Первый взнос, ₽' : 'Цена, ₽',
+                prefixIcon: const Icon(Icons.attach_money),
                 suffixText: '₽',
               ),
               keyboardType: TextInputType.number,

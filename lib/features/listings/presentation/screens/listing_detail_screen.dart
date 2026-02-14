@@ -304,6 +304,15 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 const SizedBox(height: 12),
 
                                 // Price
+                                if (_listing!.paymentType == PaymentType.installment)
+                                  Text(
+                                    'Первый взнос',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.amber.shade700,
+                                    ),
+                                  ),
                                 Text(
                                   _formatPrice(_listing!.price),
                                   style: const TextStyle(
