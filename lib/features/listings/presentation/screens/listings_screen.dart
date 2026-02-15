@@ -1007,7 +1007,7 @@ class _CompactListingCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     const SizedBox(height: 4),
-                    // Address
+                    // Address + Date
                     Row(
                       children: [
                         Icon(Icons.location_on_outlined, size: 12, color: context.appColors.textMuted),
@@ -1023,6 +1023,13 @@ class _CompactListingCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        Text(
+                          _formatDate(listing.createdAt),
+                          style: TextStyle(
+                            color: context.appColors.textMuted,
+                            fontSize: 10,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -1033,6 +1040,18 @@ class _CompactListingCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static String _formatDate(String dateStr) {
+    final d = DateTime.tryParse(dateStr);
+    if (d == null) return '';
+    final now = DateTime.now();
+    final diff = now.difference(d).inDays;
+    if (diff == 0) return 'Сегодня';
+    if (diff == 1) return 'Вчера';
+    if (diff < 7) return '$diff дн.';
+    final months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    return '${d.day} ${months[d.month - 1]}';
   }
 }
 
