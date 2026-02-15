@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:real_estate_app/app/theme/app_theme.dart';
 import 'package:http/http.dart' as http;
 
 class NominatimResult {
@@ -220,6 +221,8 @@ class _AddressPickerState extends State<AddressPicker> {
     if (renderBox == null) return;
     final offset = renderBox.localToGlobal(Offset.zero);
     final size = renderBox.size;
+    final surfaceColor = context.appColors.surfaceWhite;
+    final borderColor = context.appColors.border;
 
     _cityOverlay = OverlayEntry(
       builder: (context) => Positioned(
@@ -232,9 +235,9 @@ class _AddressPickerState extends State<AddressPicker> {
           child: Container(
             constraints: const BoxConstraints(maxHeight: 250),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: surfaceColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: borderColor),
             ),
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -269,6 +272,8 @@ class _AddressPickerState extends State<AddressPicker> {
     if (renderBox == null) return;
     final offset = renderBox.localToGlobal(Offset.zero);
     final size = renderBox.size;
+    final surfaceColor = context.appColors.surfaceWhite;
+    final borderColor = context.appColors.border;
 
     _addressOverlay = OverlayEntry(
       builder: (context) => Positioned(
@@ -281,9 +286,9 @@ class _AddressPickerState extends State<AddressPicker> {
           child: Container(
             constraints: const BoxConstraints(maxHeight: 250),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: surfaceColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: borderColor),
             ),
             child: ListView.builder(
               padding: EdgeInsets.zero,
@@ -333,7 +338,7 @@ class _AddressPickerState extends State<AddressPicker> {
                     child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
                   )
                 : _cityConfirmed
-                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    ? Icon(Icons.check_circle, color: context.appColors.success)
                     : null,
           ),
           enabled: widget.enabled,

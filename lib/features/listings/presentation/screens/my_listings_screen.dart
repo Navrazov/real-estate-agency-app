@@ -43,6 +43,40 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
     }
   }
 
+  void _showActions(Listing listing) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Редактировать'),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/listing/${listing.id}/edit');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_outline, color: context.appColors.error),
+              title: Text('Удалить', style: TextStyle(color: context.appColors.error)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _deleteListing(listing.id);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Отмена'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _deleteListing(String id) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -141,16 +175,21 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _loadListings,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(8),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 0.7,
+                        ),
                         itemCount: _listings.length,
                         itemBuilder: (context, index) {
                           final listing = _listings[index];
-                          return _ListingCard(
+                          return _MyListingCompactCard(
                             listing: listing,
                             onTap: () => context.push('/listing/${listing.id}'),
-                            onEdit: () => context.push('/listing/${listing.id}/edit'),
-                            onDelete: () => _deleteListing(listing.id),
+                            onLongPress: () => _showActions(listing),
                             formatPrice: _formatPrice,
                           );
                         },
@@ -166,126 +205,86 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
   }
 }
 
-class _ListingCard extends StatelessWidget {
-  const _ListingCard({
+class _MyListingCompactCard extends StatelessWidget {
+  const _MyListingCompactCard({
     required this.listing,
     required this.onTap,
-    required this.onEdit,
-    required this.onDelete,
+    required this.onLongPress,
     required this.formatPrice,
   });
 
   final Listing listing;
   final VoidCallback onTap;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback onLongPress;
   final String Function(double) formatPrice;
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Stack(
               children: [
-                // Image
-                SizedBox(
-                  width: 120,
-                  height: 120,
+                AspectRatio(
+                  aspectRatio: 4 / 3,
                   child: listing.images.isNotEmpty
                       ? Image.network(
                           listing.images.first,
                           fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: context.appColors.surface,
+                            child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
+                          ),
                         )
                       : Container(
                           color: context.appColors.surface,
-                          child: const Center(
-                            child: Text('🏠', style: TextStyle(fontSize: 32)),
-                          ),
+                          child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
                         ),
                 ),
-                // Content
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                // Status badge
+                if (listing.moderationStatus == ModerationStatus.pending ||
+                    listing.moderationStatus == ModerationStatus.rejected ||
+                    (listing.moderationStatus == ModerationStatus.approved &&
+                        listing.status != ListingStatus.active))
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _statusColor(context).withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        _statusText(),
+                        style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                // Views badge
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Badges
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            _Badge(
-                              text: listing.propertyType.label,
-                              color: context.appColors.primary,
-                            ),
-                            if (listing.moderationStatus == ModerationStatus.pending)
-                              _Badge(
-                                text: 'На модерации',
-                                color: Colors.orange,
-                              ),
-                            if (listing.moderationStatus == ModerationStatus.rejected)
-                              _Badge(
-                                text: 'Отклонено',
-                                color: context.appColors.error,
-                              ),
-                            if (listing.moderationStatus == ModerationStatus.approved &&
-                                listing.status != ListingStatus.active)
-                              _Badge(
-                                text: listing.status.label,
-                                color: listing.status == ListingStatus.sold
-                                    ? context.appColors.error
-                                    : context.appColors.accent,
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
+                        const Icon(Icons.visibility_outlined, size: 11, color: Colors.white),
+                        const SizedBox(width: 3),
                         Text(
-                          listing.title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        if (listing.paymentType == PaymentType.installment)
-                          Text(
-                            'Первый взнос',
-                            style: TextStyle(fontSize: 11, color: Colors.amber.shade700, fontWeight: FontWeight.w600),
-                          ),
-                        Text(
-                          formatPrice(listing.price),
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: context.appColors.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.visibility_outlined,
-                              size: 16,
-                              color: context.appColors.textMuted,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${listing.views}',
-                              style: TextStyle(
-                                color: context.appColors.textMuted,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
+                          '${listing.views}',
+                          style: const TextStyle(color: Colors.white, fontSize: 10),
                         ),
                       ],
                     ),
@@ -293,26 +292,75 @@ class _ListingCard extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: onEdit,
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: const Text('Редактировать'),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (listing.paymentType == PaymentType.installment)
+                      Text(
+                        'Первый взнос',
+                        style: TextStyle(fontSize: 10, color: context.appColors.accent, fontWeight: FontWeight.w600),
+                      ),
+                    Text(
+                      formatPrice(listing.price),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: context.appColors.primary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: onDelete,
-                      icon: Icon(Icons.delete_outline, size: 18, color: context.appColors.error),
-                      label: Text('Удалить', style: TextStyle(color: context.appColors.error)),
+                    const SizedBox(height: 2),
+                    Text(
+                      listing.title,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    if (listing.rooms != null || listing.area != null)
+                      Text(
+                        [
+                          if (listing.rooms != null) '${listing.rooms} комн.',
+                          if (listing.area != null) '${listing.area!.toStringAsFixed(0)} м\u00B2',
+                          if (listing.floor != null)
+                            listing.totalFloors != null
+                                ? '${listing.floor}/${listing.totalFloors} эт.'
+                                : '${listing.floor} эт.',
+                        ].join(' \u00B7 '),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.appColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_outlined, size: 12, color: context.appColors.textMuted),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            listing.address,
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -320,30 +368,17 @@ class _ListingCard extends StatelessWidget {
       ),
     );
   }
-}
 
-class _Badge extends StatelessWidget {
-  const _Badge({required this.text, required this.color});
+  String _statusText() {
+    if (listing.moderationStatus == ModerationStatus.pending) return 'На модерации';
+    if (listing.moderationStatus == ModerationStatus.rejected) return 'Отклонено';
+    return listing.status.label;
+  }
 
-  final String text;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: color,
-        ),
-      ),
-    );
+  Color _statusColor(BuildContext context) {
+    if (listing.moderationStatus == ModerationStatus.pending) return context.appColors.accent;
+    if (listing.moderationStatus == ModerationStatus.rejected) return context.appColors.error;
+    if (listing.status == ListingStatus.sold) return context.appColors.error;
+    return context.appColors.accent;
   }
 }

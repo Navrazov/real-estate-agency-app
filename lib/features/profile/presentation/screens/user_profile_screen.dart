@@ -18,6 +18,7 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   final _repo = ProfileRepository();
   final _chatRepo = ChatRepository();
+  final _scrollController = ScrollController();
   UserProfile? _profile;
   bool _loading = true;
   String? _error;
@@ -26,6 +27,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -38,6 +45,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       if (mounted) {
         setState(() {
           _profile = profile;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.jumpTo(0);
+          }
         });
       }
     } catch (e) {
@@ -111,6 +123,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               : _profile == null
                   ? const Center(child: Text('Пользователь не найден'))
                   : CustomScrollView(
+                      controller: _scrollController,
                       slivers: [
                         // Profile header card
                         SliverToBoxAdapter(

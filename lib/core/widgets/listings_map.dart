@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:real_estate_app/app/theme/app_theme.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -49,7 +50,7 @@ class ListingsMap extends StatelessWidget {
                         onTap: () => onMarkerTap?.call(m.id),
                         child: Icon(
                           Icons.place,
-                          color: selectedId == m.id ? Colors.blue : Colors.red,
+                          color: selectedId == m.id ? context.appColors.primary : context.appColors.error,
                           size: 40,
                         ),
                       ),

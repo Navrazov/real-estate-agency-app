@@ -585,8 +585,61 @@ class _ListingsScreenState extends State<ListingsScreen> {
     );
   }
 
+  List<Widget> _buildPageButtons() {
+    final total = _response!.totalPages;
+    final current = _page;
+
+    int start = (current - 2).clamp(1, total);
+    int end = (current + 2).clamp(1, total);
+
+    // Ensure we show at least 5 buttons if possible
+    if (end - start < 4) {
+      if (start == 1) {
+        end = (start + 4).clamp(1, total);
+      } else if (end == total) {
+        start = (end - 4).clamp(1, total);
+      }
+    }
+
+    final buttons = <Widget>[];
+
+    if (start > 1) {
+      buttons.add(_PageButton(page: 1, current: current, onTap: () {
+        setState(() => _page = 1);
+        _load();
+      }));
+      if (start > 2) {
+        buttons.add(const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Text('...'),
+        ));
+      }
+    }
+
+    for (int i = start; i <= end; i++) {
+      buttons.add(_PageButton(page: i, current: current, onTap: () {
+        setState(() => _page = i);
+        _load();
+      }));
+    }
+
+    if (end < total) {
+      if (end < total - 1) {
+        buttons.add(const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Text('...'),
+        ));
+      }
+      buttons.add(_PageButton(page: total, current: current, onTap: () {
+        setState(() => _page = total);
+        _load();
+      }));
+    }
+
+    return buttons;
+  }
+
   Widget _buildGridView(List<Listing> listings, AuthService auth) {
-    final hasMore = _response != null && _response!.page < _response!.totalPages;
     return RefreshIndicator(
       onRefresh: _load,
       child: CustomScrollView(
@@ -598,7 +651,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
                 crossAxisCount: 2,
                 mainAxisSpacing: 8,
                 crossAxisSpacing: 8,
-                childAspectRatio: 0.62,
+                childAspectRatio: 0.75,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, i) {
@@ -615,18 +668,35 @@ class _ListingsScreenState extends State<ListingsScreen> {
               ),
             ),
           ),
-          if (hasMore)
+          if (_response != null && _response!.totalPages > 1)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Center(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() => _page++);
-                      _load();
-                    },
-                    child: const Text('Загрузить ещё'),
-                  ),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: _page > 1
+                          ? () {
+                              setState(() => _page--);
+                              _load();
+                            }
+                          : null,
+                      icon: const Icon(Icons.chevron_left),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    ..._buildPageButtons(),
+                    IconButton(
+                      onPressed: _page < _response!.totalPages
+                          ? () {
+                              setState(() => _page++);
+                              _load();
+                            }
+                          : null,
+                      icon: const Icon(Icons.chevron_right),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -701,7 +771,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
                                   if (l.paymentType == PaymentType.installment)
                                     Text(
                                       'Первый взнос',
-                                      style: TextStyle(fontSize: 10, color: Colors.amber.shade700, fontWeight: FontWeight.w600),
+                                      style: TextStyle(fontSize: 10, color: context.appColors.accent, fontWeight: FontWeight.w600),
                                     ),
                                   Text(
                                     _formatPrice(l.price),
@@ -870,13 +940,13 @@ class _CompactListingCard extends StatelessWidget {
                       width: 30,
                       height: 30,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         listing.isFavorite ? Icons.favorite : Icons.favorite_border,
                         size: 16,
-                        color: listing.isFavorite ? context.appColors.error : context.appColors.textMuted,
+                        color: listing.isFavorite ? const Color(0xFFE8788A) : context.appColors.textMuted,
                       ),
                     ),
                   ),
@@ -886,15 +956,15 @@ class _CompactListingCard extends StatelessWidget {
             // Compact info
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Price
                     if (listing.paymentType == PaymentType.installment)
-                      const Text(
+                      Text(
                         'Первый взнос',
-                        style: TextStyle(fontSize: 10, color: Colors.amber, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 10, color: context.appColors.accent, fontWeight: FontWeight.w600),
                       ),
                     Text(
                       formatPrice(listing.price),
@@ -936,7 +1006,7 @@ class _CompactListingCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    const Spacer(),
+                    const SizedBox(height: 4),
                     // Address
                     Row(
                       children: [
@@ -960,6 +1030,48 @@ class _CompactListingCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PageButton extends StatelessWidget {
+  const _PageButton({
+    required this.page,
+    required this.current,
+    required this.onTap,
+  });
+
+  final int page;
+  final int current;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isActive = page == current;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: SizedBox(
+        width: 36,
+        height: 36,
+        child: Material(
+          color: isActive ? context.appColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            onTap: isActive ? null : onTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Center(
+              child: Text(
+                '$page',
+                style: TextStyle(
+                  color: isActive ? Colors.white : context.appColors.textPrimary,
+                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

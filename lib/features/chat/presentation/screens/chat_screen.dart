@@ -313,47 +313,73 @@ class _ChatScreenState extends State<ChatScreen> {
           onTap: widget.otherUserId != null
               ? () => context.push('/user/${widget.otherUserId}')
               : null,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              Text(_otherUserProfile?.displayName ?? 'Чат'),
-              if (_isTyping)
-                const Text(
-                  'печатает...',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.normal,
-                    color: Colors.green,
-                  ),
-                )
-              else if (_otherUserProfile != null)
-                Row(
-                  children: [
-                    if (_otherUserProfile!.online || _formatLastSeen(_otherUserProfile!.lastSeen, _otherUserProfile!.online) == 'в сети')
-                      Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.only(right: 4),
-                        decoration: const BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    Text(
-                      _formatLastSeen(_otherUserProfile!.lastSeen, _otherUserProfile!.online),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.normal,
-                        color: _otherUserProfile!.online ? Colors.green : null,
-                      ),
-                    ),
-                  ],
-                )
-              else if (widget.listingTitle != null)
-                Text(
-                  widget.listingTitle!,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              if (_otherUserProfile != null) ...[
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: context.appColors.primary.withValues(alpha: 0.1),
+                  backgroundImage: _otherUserProfile!.avatar != null
+                      ? NetworkImage(_otherUserProfile!.avatar!)
+                      : null,
+                  child: _otherUserProfile!.avatar == null
+                      ? Text(
+                          _otherUserProfile!.displayName[0].toUpperCase(),
+                          style: TextStyle(
+                            color: context.appColors.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        )
+                      : null,
                 ),
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_otherUserProfile?.displayName ?? 'Чат'),
+                    if (_isTyping)
+                      Text(
+                        'печатает...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.normal,
+                          color: context.appColors.success,
+                        ),
+                      )
+                    else if (_otherUserProfile != null)
+                      Row(
+                        children: [
+                          if (_otherUserProfile!.online || _formatLastSeen(_otherUserProfile!.lastSeen, _otherUserProfile!.online) == 'в сети')
+                            Container(
+                              width: 8,
+                              height: 8,
+                              margin: const EdgeInsets.only(right: 4),
+                              decoration: BoxDecoration(
+                                color: context.appColors.success,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          Text(
+                            _formatLastSeen(_otherUserProfile!.lastSeen, _otherUserProfile!.online),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.normal,
+                              color: _otherUserProfile!.online ? context.appColors.success : context.appColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      )
+                    else if (widget.listingTitle != null)
+                      Text(
+                        widget.listingTitle!,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+                      ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -432,7 +458,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                             child: DecoratedBox(
                                               decoration: BoxDecoration(
                                                 color: isMine
-                                                    ? AppColors.primary
+                                                    ? context.appColors.primary
                                                     : context.appColors.surface,
                                                 borderRadius: BorderRadius.only(
                                                   topLeft: const Radius.circular(16),

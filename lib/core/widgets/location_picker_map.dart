@@ -83,9 +83,9 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
                   point: _point,
                   width: 48,
                   height: 48,
-                  child: const Icon(
+                  child: Icon(
                     Icons.location_on,
-                    color: AppColors.primary,
+                    color: context.appColors.primary,
                     size: 48,
                   ),
                 ),

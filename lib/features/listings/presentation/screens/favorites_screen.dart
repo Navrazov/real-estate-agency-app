@@ -16,6 +16,7 @@ class FavoritesScreen extends StatefulWidget {
 class _FavoritesScreenState extends State<FavoritesScreen> {
   final _repo = ListingsRepository();
   List<Listing> _listings = [];
+  final Set<String> _removedIds = {};
   bool _loading = true;
   String? _error;
 
@@ -29,6 +30,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _removedIds.clear();
     });
     try {
       final listings = await _repo.getFavorites();
@@ -44,15 +46,30 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     }
   }
 
-  Future<void> _removeFromFavorites(String listingId) async {
+  Future<void> _toggleFavorite(String listingId) async {
+    final wasRemoved = _removedIds.contains(listingId);
+    setState(() {
+      if (wasRemoved) {
+        _removedIds.remove(listingId);
+      } else {
+        _removedIds.add(listingId);
+      }
+    });
     try {
       final result = await _repo.toggleFavorite(listingId);
       final favorites = (result['favorites'] as List<dynamic>).cast<String>();
-      AuthServiceScope.of(context).updateFavorites(favorites);
-      setState(() {
-        _listings.removeWhere((l) => l.id == listingId);
-      });
+      if (mounted) {
+        AuthServiceScope.of(context).updateFavorites(favorites);
+      }
     } catch (e) {
+      // Revert on error
+      setState(() {
+        if (wasRemoved) {
+          _removedIds.add(listingId);
+        } else {
+          _removedIds.remove(listingId);
+        }
+      });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Ошибка: $e')),
@@ -119,15 +136,23 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _loadFavorites,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(8),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 0.75,
+                        ),
                         itemCount: _listings.length,
                         itemBuilder: (context, index) {
                           final listing = _listings[index];
-                          return _FavoriteCard(
+                          final isRemoved = _removedIds.contains(listing.id);
+                          return _FavoriteCompactCard(
                             listing: listing,
+                            isRemoved: isRemoved,
                             onTap: () => context.push('/listing/${listing.id}'),
-                            onRemove: () => _removeFromFavorites(listing.id),
+                            onFavorite: () => _toggleFavorite(listing.id),
                             formatPrice: _formatPrice,
                           );
                         },
@@ -137,125 +162,137 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 }
 
-class _FavoriteCard extends StatelessWidget {
-  const _FavoriteCard({
+class _FavoriteCompactCard extends StatelessWidget {
+  const _FavoriteCompactCard({
     required this.listing,
+    required this.isRemoved,
     required this.onTap,
-    required this.onRemove,
+    required this.onFavorite,
     required this.formatPrice,
   });
 
   final Listing listing;
+  final bool isRemoved;
   final VoidCallback onTap;
-  final VoidCallback onRemove;
+  final VoidCallback onFavorite;
   final String Function(double) formatPrice;
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
       clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
-            SizedBox(
-              width: 120,
-              height: 120,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  listing.images.isNotEmpty
+            Stack(
+              children: [
+                AspectRatio(
+                  aspectRatio: 4 / 3,
+                  child: listing.images.isNotEmpty
                       ? Image.network(
                           listing.images.first,
                           fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: context.appColors.surface,
+                            child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
+                          ),
                         )
                       : Container(
                           color: context.appColors.surface,
-                          child: const Center(
-                            child: Text('🏠', style: TextStyle(fontSize: 32)),
-                          ),
+                          child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
                         ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: GestureDetector(
-                      onTap: onRemove,
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.favorite,
-                          color: context.appColors.error,
-                          size: 18,
-                        ),
+                ),
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: GestureDetector(
+                    onTap: onFavorite,
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isRemoved ? Icons.favorite_border : Icons.favorite,
+                        size: 16,
+                        color: isRemoved ? context.appColors.textMuted : const Color(0xFFE8788A),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            // Content
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: context.appColors.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        listing.propertyType.label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: context.appColors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      listing.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
                     if (listing.paymentType == PaymentType.installment)
                       Text(
                         'Первый взнос',
-                        style: TextStyle(fontSize: 11, color: Colors.amber.shade700, fontWeight: FontWeight.w600),
+                        style: TextStyle(fontSize: 10, color: context.appColors.accent, fontWeight: FontWeight.w600),
                       ),
                     Text(
                       formatPrice(listing.price),
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: context.appColors.primary,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
-                      listing.address,
-                      style: TextStyle(
-                        color: context.appColors.textSecondary,
+                      listing.title,
+                      style: const TextStyle(
                         fontSize: 13,
+                        fontWeight: FontWeight.w500,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    if (listing.rooms != null || listing.area != null)
+                      Text(
+                        [
+                          if (listing.rooms != null) '${listing.rooms} комн.',
+                          if (listing.area != null) '${listing.area!.toStringAsFixed(0)} м\u00B2',
+                          if (listing.floor != null)
+                            listing.totalFloors != null
+                                ? '${listing.floor}/${listing.totalFloors} эт.'
+                                : '${listing.floor} эт.',
+                        ].join(' \u00B7 '),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.appColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_outlined, size: 12, color: context.appColors.textMuted),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            listing.address,
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

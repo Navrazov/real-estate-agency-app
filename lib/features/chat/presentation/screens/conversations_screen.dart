@@ -211,13 +211,18 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                                   children: [
                                     CircleAvatar(
                                       backgroundColor: context.appColors.primary.withValues(alpha: 0.1),
-                                      child: Text(
-                                        initial,
-                                        style: TextStyle(
-                                          color: context.appColors.primary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                      backgroundImage: conv.otherUser?.avatar != null
+                                          ? NetworkImage(conv.otherUser!.avatar!)
+                                          : null,
+                                      child: conv.otherUser?.avatar == null
+                                          ? Text(
+                                              initial,
+                                              style: TextStyle(
+                                                color: context.appColors.primary,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            )
+                                          : null,
                                     ),
                                     if (isOnline)
                                       Positioned(
@@ -227,9 +232,9 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                                           width: 12,
                                           height: 12,
                                           decoration: BoxDecoration(
-                                            color: Colors.green,
+                                            color: context.appColors.success,
                                             shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 2),
+                                            border: Border.all(color: context.appColors.surfaceWhite, width: 2),
                                           ),
                                         ),
                                       ),

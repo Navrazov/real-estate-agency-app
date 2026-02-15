@@ -20,6 +20,7 @@ class ListingDetailScreen extends StatefulWidget {
 class _ListingDetailScreenState extends State<ListingDetailScreen> {
   final _repo = ListingsRepository();
   final _chatRepo = ChatRepository();
+  final _scrollController = ScrollController();
   Listing? _listing;
   bool _loading = true;
   String? _error;
@@ -30,6 +31,12 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -43,6 +50,12 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         setState(() {
           _listing = listing;
           _isFavorite = listing.isFavorite;
+        });
+        // Ensure scroll starts at top
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.jumpTo(0);
+          }
         });
       }
     } catch (e) {
@@ -136,6 +149,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
               : _listing == null
                   ? const Center(child: Text('Объявление не найдено'))
                   : CustomScrollView(
+                      controller: _scrollController,
                       slivers: [
                         // Image Header
                         SliverAppBar(
@@ -145,7 +159,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                             icon: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.9),
+                                color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(Icons.arrow_back, color: context.appColors.textPrimary),
@@ -157,12 +171,12 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                               icon: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.9),
+                                  color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   _isFavorite ? Icons.favorite : Icons.favorite_border,
-                                  color: _isFavorite ? context.appColors.error : context.appColors.textPrimary,
+                                  color: _isFavorite ? const Color(0xFFE8788A) : context.appColors.textPrimary,
                                 ),
                               ),
                               onPressed: _toggleFavorite,
@@ -172,7 +186,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 icon: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.9),
+                                    color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(Icons.edit, color: context.appColors.textPrimary),
@@ -183,7 +197,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 icon: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.9),
+                                    color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(Icons.delete_outline, color: context.appColors.error),
@@ -311,7 +325,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.amber.shade700,
+                                      color: context.appColors.accent,
                                     ),
                                   ),
                                 Text(
@@ -331,8 +345,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.amber.shade50,
-                                      border: Border.all(color: Colors.amber.shade200),
+                                      color: context.appColors.accent.withValues(alpha: 0.1),
+                                      border: Border.all(color: context.appColors.accent.withValues(alpha: 0.3)),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Column(
@@ -346,7 +360,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                               'Рассрочка',
                                               style: TextStyle(
                                                 fontWeight: FontWeight.w600,
-                                                color: Colors.amber.shade800,
+                                                color: context.appColors.accent,
                                               ),
                                             ),
                                           ],
@@ -357,7 +371,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                           style: TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
-                                            color: Colors.amber.shade900,
+                                            color: context.appColors.accent,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
@@ -365,7 +379,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                           'на ${_listing!.installmentMonths} мес. • Итого ${_formatPrice(_listing!.installmentMonths! * _listing!.installmentMonthly!)}',
                                           style: TextStyle(
                                             fontSize: 13,
-                                            color: Colors.amber.shade700,
+                                            color: context.appColors.accent.withValues(alpha: 0.7),
                                           ),
                                         ),
                                       ],
@@ -432,13 +446,22 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                               : '${_listing!.floor}',
                                           label: 'Этаж',
                                         ),
-                                      _FeatureItem(
-                                        icon: Icons.visibility_outlined,
-                                        value: '${_listing!.views}',
-                                        label: 'Просмотров',
-                                      ),
                                     ],
                                   ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(Icons.visibility_outlined, size: 14, color: context.appColors.textMuted),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${_listing!.views} просмотров',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: context.appColors.textMuted,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 24),
 
@@ -588,7 +611,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                         onPressed: _toggleFavorite,
                         icon: Icon(
                           _isFavorite ? Icons.favorite : Icons.favorite_border,
-                          color: _isFavorite ? context.appColors.error : null,
+                          color: _isFavorite ? const Color(0xFFE8788A) : null,
                         ),
                         label: Text(_isFavorite ? 'В избранном' : 'В избранное'),
                         style: OutlinedButton.styleFrom(

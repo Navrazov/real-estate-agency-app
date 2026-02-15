@@ -311,7 +311,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: AppColors.primary,
+                                color: context.appColors.primary,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Text(
@@ -467,7 +467,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: selected ? context.appColors.primary : Colors.grey.shade300,
+                            color: selected ? context.appColors.primary : context.appColors.border,
                             width: selected ? 2 : 1,
                           ),
                           color: selected ? context.appColors.primary.withAlpha(20) : context.appColors.surfaceWhite,
@@ -498,8 +498,8 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  border: Border.all(color: Colors.amber.shade200),
+                  color: context.appColors.accent.withValues(alpha: 0.1),
+                  border: Border.all(color: context.appColors.accent.withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -507,9 +507,9 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info_outline, size: 18, color: Colors.amber.shade700),
+                        Icon(Icons.info_outline, size: 18, color: context.appColors.accent),
                         const SizedBox(width: 8),
-                        Text('Условия рассрочки', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.amber.shade800)),
+                        Text('Условия рассрочки', style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.accent)),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -563,12 +563,12 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.amber.shade100,
+                            color: context.appColors.accent.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             'Итого за рассрочку: ${_formatNumber(total.toString())} ₽ ($months мес × ${_formatNumber(monthlyDigits)} ₽)',
-                            style: TextStyle(fontSize: 13, color: Colors.amber.shade900, fontWeight: FontWeight.w500),
+                            style: TextStyle(fontSize: 13, color: context.appColors.accent, fontWeight: FontWeight.w500),
                           ),
                         ),
                       );
