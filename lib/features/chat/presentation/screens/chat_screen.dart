@@ -210,12 +210,30 @@ class _ChatScreenState extends State<ChatScreen> {
   String _formatTime(String dateStr) {
     final d = DateTime.tryParse(dateStr);
     if (d == null) return '';
+    return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDateSeparator(DateTime date) {
     final now = DateTime.now();
-    final isToday = d.day == now.day && d.month == now.month && d.year == now.year;
-    if (isToday) {
-      return '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    final today = DateTime(now.year, now.month, now.day);
+    final msgDay = DateTime(date.year, date.month, date.day);
+    final diff = today.difference(msgDay).inDays;
+    if (diff == 0) return 'Сегодня';
+    if (diff == 1) return 'Вчера';
+    const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    if (date.year == now.year) {
+      return '${date.day} ${months[date.month - 1]}';
     }
-    return '${d.day}.${d.month.toString().padLeft(2, '0')} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  bool _shouldShowDateSeparator(int index) {
+    if (index == 0) return true;
+    final current = DateTime.tryParse(_messages[index].createdAt);
+    final previous = DateTime.tryParse(_messages[index - 1].createdAt);
+    if (current == null || previous == null) return false;
+    return current.day != previous.day || current.month != previous.month || current.year != previous.year;
   }
 
   @override
@@ -298,68 +316,95 @@ class _ChatScreenState extends State<ChatScreen> {
                               itemBuilder: (context, index) {
                                 final msg = _messages[index];
                                 final isMine = msg.senderId == currentUserId;
+                                final showDate = _shouldShowDateSeparator(index);
+                                final msgDate = DateTime.tryParse(msg.createdAt);
 
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Align(
-                                    alignment: isMine
-                                        ? Alignment.centerRight
-                                        : Alignment.centerLeft,
-                                    child: GestureDetector(
-                                      onLongPress: () => _showDeleteMessageSheet(msg, isMine),
-                                      child: ConstrainedBox(
-                                        constraints: BoxConstraints(
-                                          maxWidth: MediaQuery.of(context).size.width * 0.75,
-                                        ),
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            color: isMine
-                                                ? AppColors.primary
-                                                : AppColors.surface,
-                                            borderRadius: BorderRadius.only(
-                                              topLeft: const Radius.circular(16),
-                                              topRight: const Radius.circular(16),
-                                              bottomLeft: Radius.circular(isMine ? 16 : 4),
-                                              bottomRight: Radius.circular(isMine ? 4 : 16),
+                                return Column(
+                                  children: [
+                                    if (showDate && msgDate != null)
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        child: Center(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.surface,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              _formatDateSeparator(msgDate),
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: AppColors.textMuted,
+                                                fontWeight: FontWeight.w500,
+                                              ),
                                             ),
                                           ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
+                                        ),
+                                      ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Align(
+                                        alignment: isMine
+                                            ? Alignment.centerRight
+                                            : Alignment.centerLeft,
+                                        child: GestureDetector(
+                                          onLongPress: () => _showDeleteMessageSheet(msg, isMine),
+                                          child: ConstrainedBox(
+                                            constraints: BoxConstraints(
+                                              maxWidth: MediaQuery.of(context).size.width * 0.75,
                                             ),
-                                            child: Wrap(
-                                              alignment: WrapAlignment.end,
-                                              spacing: 6,
-                                              runSpacing: 2,
-                                              crossAxisAlignment: WrapCrossAlignment.end,
-                                              children: [
-                                                Text(
-                                                  msg.text,
-                                                  style: TextStyle(
-                                                    color: isMine ? Colors.white : AppColors.textPrimary,
-                                                    fontSize: 15,
-                                                  ),
+                                            child: DecoratedBox(
+                                              decoration: BoxDecoration(
+                                                color: isMine
+                                                    ? AppColors.primary
+                                                    : AppColors.surface,
+                                                borderRadius: BorderRadius.only(
+                                                  topLeft: const Radius.circular(16),
+                                                  topRight: const Radius.circular(16),
+                                                  bottomLeft: Radius.circular(isMine ? 16 : 4),
+                                                  bottomRight: Radius.circular(isMine ? 4 : 16),
                                                 ),
-                                                Padding(
-                                                  padding: const EdgeInsets.only(top: 2),
-                                                  child: Text(
-                                                    _formatTime(msg.createdAt),
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      color: isMine
-                                                          ? Colors.white.withOpacity(0.7)
-                                                          : AppColors.textMuted,
+                                              ),
+                                              child: Padding(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 8,
+                                                ),
+                                                child: Wrap(
+                                                  alignment: WrapAlignment.end,
+                                                  spacing: 6,
+                                                  runSpacing: 2,
+                                                  crossAxisAlignment: WrapCrossAlignment.end,
+                                                  children: [
+                                                    Text(
+                                                      msg.text,
+                                                      style: TextStyle(
+                                                        color: isMine ? Colors.white : AppColors.textPrimary,
+                                                        fontSize: 15,
+                                                      ),
                                                     ),
-                                                  ),
+                                                    Padding(
+                                                      padding: const EdgeInsets.only(top: 2),
+                                                      child: Text(
+                                                        _formatTime(msg.createdAt),
+                                                        style: TextStyle(
+                                                          fontSize: 11,
+                                                          color: isMine
+                                                              ? Colors.white.withValues(alpha: 0.7)
+                                                              : AppColors.textMuted,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 );
                               },
                             ),

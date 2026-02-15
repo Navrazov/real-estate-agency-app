@@ -3,7 +3,12 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  ApiClient({String baseUrl = 'http://localhost:3000/api'}) : _baseUrl = baseUrl;
+  static const defaultBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://estate-hub.ru/api',
+  );
+
+  ApiClient({String baseUrl = defaultBaseUrl}) : _baseUrl = baseUrl;
 
   final String _baseUrl;
 

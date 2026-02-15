@@ -19,8 +19,10 @@ class SocketService {
     final token = await _api.getToken();
     if (token == null) return;
 
-    // Derive socket URL from API base URL (remove /api suffix)
-    const baseUrl = 'http://localhost:3000';
+    const baseUrl = String.fromEnvironment(
+      'SOCKET_BASE_URL',
+      defaultValue: 'https://estate-hub.ru',
+    );
 
     _socket = io.io(
       baseUrl,
