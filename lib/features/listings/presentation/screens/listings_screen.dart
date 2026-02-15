@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/widgets/listings_map.dart';
+import '../../../../core/widgets/skeleton.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
 
@@ -260,7 +261,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
           // Content
           Expanded(
             child: _loading && listings.isEmpty
-                ? const Center(child: CircularProgressIndicator())
+                ? const SkeletonListingsGrid()
                 : _error != null && listings.isEmpty
                     ? Center(
                         child: Column(
@@ -274,11 +275,13 @@ class _ListingsScreenState extends State<ListingsScreen> {
                           ],
                         ),
                       )
-                    : _viewMode == _ViewMode.map
-                        ? _buildMapView(markers, listings)
-                        : listings.isEmpty
-                            ? _buildEmptyState()
-                            : _buildGridView(listings, auth),
+                    : _loading && _response != null
+                        ? const SkeletonListingsGrid()
+                        : _viewMode == _ViewMode.map
+                            ? _buildMapView(markers, listings)
+                            : listings.isEmpty
+                                ? _buildEmptyState()
+                                : _buildGridView(listings, auth),
           ),
         ],
       ),

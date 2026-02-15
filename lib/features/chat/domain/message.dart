@@ -84,4 +84,15 @@ class Message {
       createdAt: json['createdAt'] as String,
     );
   }
+
+  Message copyWith({bool? read}) {
+    return Message(
+      id: id,
+      conversationId: conversationId,
+      senderId: senderId,
+      text: text,
+      read: read ?? this.read,
+      createdAt: createdAt,
+    );
+  }
 }

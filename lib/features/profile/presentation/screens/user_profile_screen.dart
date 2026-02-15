@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
+import '../../../../core/widgets/skeleton.dart';
 import '../../../chat/data/chat_repository.dart';
 import '../../data/profile_repository.dart';
 import '../../domain/user_profile.dart';
@@ -93,7 +94,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         title: Text(_profile?.displayName ?? 'Профиль'),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonProfile()
           : _error != null
               ? Center(
                   child: Column(

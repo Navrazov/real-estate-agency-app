@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/widgets/listings_map.dart';
+import '../../../../core/widgets/skeleton.dart';
 import '../../../chat/data/chat_repository.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
@@ -118,7 +119,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
 
     return Scaffold(
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonListingDetail()
           : _error != null
               ? Center(
                   child: Column(

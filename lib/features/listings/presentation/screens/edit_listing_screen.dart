@@ -6,6 +6,7 @@ import 'package:real_estate_app/app/theme/app_theme.dart';
 import 'package:real_estate_app/core/auth/auth_service.dart';
 import 'package:real_estate_app/core/widgets/location_picker_map.dart';
 import 'package:real_estate_app/core/widgets/address_picker.dart';
+import 'package:real_estate_app/core/widgets/skeleton.dart';
 import 'package:real_estate_app/features/listings/data/listings_repository.dart';
 import 'package:real_estate_app/features/listings/domain/listing.dart';
 
@@ -243,7 +244,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
     if (_loading) {
       return Scaffold(
         appBar: AppBar(title: const Text('Редактирование')),
-        body: const Center(child: CircularProgressIndicator()),
+        body: const SkeletonEditListing(),
       );
     }
 

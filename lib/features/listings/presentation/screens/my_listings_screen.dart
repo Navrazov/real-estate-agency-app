@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
+import 'package:real_estate_app/core/widgets/skeleton.dart';
 import 'package:real_estate_app/features/listings/data/listings_repository.dart';
 import 'package:real_estate_app/features/listings/domain/listing.dart';
 
@@ -98,7 +99,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
         title: const Text('Мои объявления'),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonMyListings()
           : _error != null
               ? Center(
                   child: Column(

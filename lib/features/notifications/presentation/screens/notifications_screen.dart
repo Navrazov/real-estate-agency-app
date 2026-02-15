@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
+import '../../../../core/widgets/skeleton.dart';
 import '../../data/notifications_repository.dart';
 import '../../domain/notification_model.dart';
 
@@ -113,7 +114,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonNotifications()
           : _notifications.isEmpty
               ? Center(
                   child: Column(

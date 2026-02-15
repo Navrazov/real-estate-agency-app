@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/widgets/skeleton.dart';
 import '../../data/chat_repository.dart';
 import '../../domain/message.dart';
 import '../../../profile/data/profile_repository.dart';
@@ -75,6 +76,19 @@ class _ChatScreenState extends State<ChatScreen> {
         _socketService.emit('mark_read', {'conversationId': widget.conversationId});
       }
     });
+    _socketService.on('messages_read', (data) {
+      if (!mounted) return;
+      final convId = (data as Map<String, dynamic>)['conversationId'] as String;
+      if (convId == widget.conversationId) {
+        final currentUserId = AuthServiceScope.of(context).user?.id;
+        setState(() {
+          _messages = _messages.map((m) {
+            if (m.senderId == currentUserId) return m.copyWith(read: true);
+            return m;
+          }).toList();
+        });
+      }
+    });
   }
 
   @override
@@ -82,6 +96,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _controller.dispose();
     _scrollController.dispose();
     _socketService.off('new_message');
+    _socketService.off('messages_read');
     super.dispose();
   }
 
@@ -284,7 +299,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonMessages()
           : _error != null
               ? Center(
                   child: Column(
@@ -386,14 +401,29 @@ class _ChatScreenState extends State<ChatScreen> {
                                                     ),
                                                     Padding(
                                                       padding: const EdgeInsets.only(top: 2),
-                                                      child: Text(
-                                                        _formatTime(msg.createdAt),
-                                                        style: TextStyle(
-                                                          fontSize: 11,
-                                                          color: isMine
-                                                              ? Colors.white.withValues(alpha: 0.7)
-                                                              : AppColors.textMuted,
-                                                        ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Text(
+                                                            _formatTime(msg.createdAt),
+                                                            style: TextStyle(
+                                                              fontSize: 11,
+                                                              color: isMine
+                                                                  ? Colors.white.withValues(alpha: 0.7)
+                                                                  : AppColors.textMuted,
+                                                            ),
+                                                          ),
+                                                          if (isMine) ...[
+                                                            const SizedBox(width: 3),
+                                                            Icon(
+                                                              msg.read ? Icons.done_all : Icons.done,
+                                                              size: 14,
+                                                              color: msg.read
+                                                                  ? Colors.white
+                                                                  : Colors.white.withValues(alpha: 0.7),
+                                                            ),
+                                                          ],
+                                                        ],
                                                       ),
                                                     ),
                                                   ],

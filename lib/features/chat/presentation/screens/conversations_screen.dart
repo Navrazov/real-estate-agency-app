@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/socket/socket_service.dart';
+import '../../../../core/widgets/skeleton.dart';
 import '../../data/chat_repository.dart';
 import '../../domain/message.dart';
 
@@ -134,7 +135,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         title: const Text('Сообщения'),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonConversationList()
           : _error != null
               ? Center(
                   child: Column(

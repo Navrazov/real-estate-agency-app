@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import 'package:real_estate_app/core/auth/auth_service.dart';
+import 'package:real_estate_app/core/widgets/skeleton.dart';
 import 'package:real_estate_app/features/listings/data/listings_repository.dart';
 import 'package:real_estate_app/features/listings/domain/listing.dart';
 
@@ -77,7 +78,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         title: const Text('Избранное'),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonFavoritesList()
           : _error != null
               ? Center(
                   child: Column(
