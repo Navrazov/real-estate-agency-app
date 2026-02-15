@@ -43,6 +43,22 @@ Future<List<NominatimResult>> _searchNominatim(Map<String, String> params) async
   }
 }
 
+String _cleanAddress(String displayName, String city) {
+  final parts = displayName.split(',').map((s) => s.trim()).toList();
+  return parts.where((p) {
+    if (p == city || p == 'Россия' || p == 'Russia') return false;
+    if (RegExp(r'^\d{5,6}$').hasMatch(p)) return false;
+    if (RegExp(r'район$', caseSensitive: false).hasMatch(p)) return false;
+    if (RegExp(r'округ$', caseSensitive: false).hasMatch(p)) return false;
+    if (RegExp(r'область$', caseSensitive: false).hasMatch(p)) return false;
+    if (RegExp(r'край$', caseSensitive: false).hasMatch(p)) return false;
+    if (RegExp(r'республика', caseSensitive: false).hasMatch(p)) return false;
+    if (RegExp(r'городской округ', caseSensitive: false).hasMatch(p)) return false;
+    if (RegExp(r'муниципальный', caseSensitive: false).hasMatch(p)) return false;
+    return true;
+  }).join(', ');
+}
+
 class AddressPicker extends StatefulWidget {
   const AddressPicker({
     super.key,
@@ -52,6 +68,7 @@ class AddressPicker extends StatefulWidget {
     required this.onAddressChanged,
     this.onLocationSelected,
     this.enabled = true,
+    this.reverseAddress,
   });
 
   final String? initialCity;
@@ -60,6 +77,7 @@ class AddressPicker extends StatefulWidget {
   final ValueChanged<String> onAddressChanged;
   final void Function(double lat, double lng)? onLocationSelected;
   final bool enabled;
+  final String? reverseAddress;
 
   @override
   State<AddressPicker> createState() => _AddressPickerState();
@@ -105,6 +123,20 @@ class _AddressPickerState extends State<AddressPicker> {
     }
     _cityController.addListener(_onCityChanged);
     _addressController.addListener(_onAddressChanged);
+  }
+
+  @override
+  void didUpdateWidget(AddressPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.reverseAddress != null &&
+        widget.reverseAddress != oldWidget.reverseAddress &&
+        _cityConfirmed) {
+      final cleaned = widget.reverseAddress!.replaceFirst('$_selectedCity, ', '');
+      _addressController.removeListener(_onAddressChanged);
+      _addressController.text = cleaned;
+      _addressController.addListener(_onAddressChanged);
+      widget.onAddressChanged(widget.reverseAddress!);
+    }
   }
 
   @override
@@ -201,13 +233,11 @@ class _AddressPickerState extends State<AddressPicker> {
   }
 
   void _selectAddress(NominatimResult result) {
-    final parts = result.displayName.split(',').map((s) => s.trim()).toList();
-    final filtered = parts.where((p) => p != _selectedCity && p != 'Россия' && p != 'Russia').toList();
-    final cleanAddress = filtered.join(', ');
+    final clean = _cleanAddress(result.displayName, _selectedCity);
     _addressController.removeListener(_onAddressChanged);
-    _addressController.text = cleanAddress;
+    _addressController.text = clean;
     _addressController.addListener(_onAddressChanged);
-    widget.onAddressChanged('$_selectedCity, $cleanAddress');
+    widget.onAddressChanged('$_selectedCity, $clean');
     if (widget.onLocationSelected != null) {
       widget.onLocationSelected!(result.lat, result.lon);
     }
@@ -296,11 +326,12 @@ class _AddressPickerState extends State<AddressPicker> {
               itemCount: _addressSuggestions.length,
               itemBuilder: (ctx, i) {
                 final s = _addressSuggestions[i];
+                final display = _cleanAddress(s.displayName, _selectedCity);
                 return InkWell(
                   onTap: () => _selectAddress(s),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Text(s.displayName, style: const TextStyle(fontSize: 14)),
+                    child: Text(display.isNotEmpty ? display : s.displayName, style: const TextStyle(fontSize: 14)),
                   ),
                 );
               },

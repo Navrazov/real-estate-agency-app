@@ -77,6 +77,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
   String _address = '';
   double? _lat;
   double? _lng;
+  String? _reverseAddress;
 
   @override
   void initState() {
@@ -649,6 +650,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
               initialCity: _city,
               initialAddress: _address,
               enabled: !_saving,
+              reverseAddress: _reverseAddress,
               onCityChanged: (city) => setState(() => _city = city),
               onAddressChanged: (addr) => setState(() => _address = addr),
               onLocationSelected: (lat, lng) {
@@ -660,6 +662,11 @@ class _EditListingScreenState extends State<EditListingScreen> {
 
             // Map
             const Text('Местоположение', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Text(
+              'Нажмите на карту — адрес заполнится автоматически',
+              style: TextStyle(color: context.appColors.textMuted, fontSize: 12),
+            ),
             const SizedBox(height: 8),
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
@@ -671,6 +678,16 @@ class _EditListingScreenState extends State<EditListingScreen> {
                   onLocationChanged: (lat, lng) {
                     _lat = lat;
                     _lng = lng;
+                  },
+                  onReverseGeocode: (address) {
+                    setState(() {
+                      _reverseAddress = address;
+                      _address = address;
+                      final parts = address.split(', ');
+                      if (parts.isNotEmpty && _city.isEmpty) {
+                        _city = parts[0];
+                      }
+                    });
                   },
                 ),
               ),

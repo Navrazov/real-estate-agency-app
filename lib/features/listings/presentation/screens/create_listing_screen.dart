@@ -66,6 +66,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   String _address = '';
   double? _lat;
   double? _lng;
+  String? _reverseAddress;
   bool _loading = false;
   bool _uploading = false;
   String? _error;
@@ -642,6 +643,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             // Address
             AddressPicker(
               enabled: !_loading,
+              reverseAddress: _reverseAddress,
               onCityChanged: (city) => setState(() => _city = city),
               onAddressChanged: (addr) => setState(() => _address = addr),
               onLocationSelected: (lat, lng) {
@@ -655,7 +657,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             const Text('Местоположение на карте', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(
-              'Нажмите на карту или перетащите маркер',
+              'Нажмите на карту — адрес заполнится автоматически',
               style: TextStyle(color: context.appColors.textMuted, fontSize: 12),
             ),
             const SizedBox(height: 8),
@@ -669,6 +671,17 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                   onLocationChanged: (lat, lng) {
                     _lat = lat;
                     _lng = lng;
+                  },
+                  onReverseGeocode: (address) {
+                    setState(() {
+                      _reverseAddress = address;
+                      _address = address;
+                      // Auto-set city from reverse geocoded address
+                      final parts = address.split(', ');
+                      if (parts.isNotEmpty && _city.isEmpty) {
+                        _city = parts[0];
+                      }
+                    });
                   },
                 ),
               ),

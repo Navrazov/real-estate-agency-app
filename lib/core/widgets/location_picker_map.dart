@@ -1,6 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
 import 'package:real_estate_app/app/theme/app_theme.dart';
 
 class LocationPickerMap extends StatefulWidget {
@@ -13,6 +16,7 @@ class LocationPickerMap extends StatefulWidget {
     double? lng,
     void Function(double lat, double lng)? onChanged,
     this.onLocationChanged,
+    this.onReverseGeocode,
     this.height = 280,
   })  : _legacyLat = lat,
         _legacyLng = lng,
@@ -24,6 +28,7 @@ class LocationPickerMap extends StatefulWidget {
   final double? _legacyLng;
   final void Function(double lat, double lng)? onLocationChanged;
   final void Function(double lat, double lng)? _legacyOnChanged;
+  final void Function(String address)? onReverseGeocode;
   final double height;
 
   @override
@@ -34,6 +39,7 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
   static const _defaultCenter = LatLng(55.75, 37.62);
   static const _defaultZoom = 10.0;
   late LatLng _point;
+  Timer? _reverseTimer;
 
   double? get _lat => widget.initialLat ?? widget._legacyLat;
   double? get _lng => widget.initialLng ?? widget._legacyLng;
@@ -41,6 +47,44 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
   void _notifyChange(double lat, double lng) {
     widget.onLocationChanged?.call(lat, lng);
     widget._legacyOnChanged?.call(lat, lng);
+
+    // Debounced reverse geocoding
+    if (widget.onReverseGeocode != null) {
+      _reverseTimer?.cancel();
+      _reverseTimer = Timer(const Duration(milliseconds: 500), () {
+        _reverseGeocode(lat, lng);
+      });
+    }
+  }
+
+  Future<void> _reverseGeocode(double lat, double lng) async {
+    try {
+      final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
+        'format': 'json',
+        'lat': lat.toString(),
+        'lon': lng.toString(),
+        'accept-language': 'ru',
+        'addressdetails': '1',
+      });
+      final res = await http.get(uri, headers: {'User-Agent': 'RealEstateApp/1.0'});
+      if (res.statusCode != 200) return;
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final addr = data['address'] as Map<String, dynamic>?;
+      if (addr == null) return;
+
+      final city = addr['city'] ?? addr['town'] ?? addr['village'] ?? '';
+      final road = addr['road'] ?? '';
+      final house = addr['house_number'] ?? '';
+
+      final parts = <String>[];
+      if (city != '') parts.add(city as String);
+      if (road != '') parts.add(road as String);
+      if (house != '') parts.add(house as String);
+
+      if (parts.isNotEmpty && mounted) {
+        widget.onReverseGeocode!(parts.join(', '));
+      }
+    } catch (_) {}
   }
 
   @override
@@ -55,6 +99,12 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
     if (_lat != null && _lng != null) {
       _point = LatLng(_lat!, _lng!);
     }
+  }
+
+  @override
+  void dispose() {
+    _reverseTimer?.cancel();
+    super.dispose();
   }
 
   @override
