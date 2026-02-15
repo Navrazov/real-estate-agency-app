@@ -90,7 +90,7 @@ class ProfileMenuScreen extends StatelessWidget {
           _MenuTile(
             icon: Icons.notifications_outlined,
             title: 'Уведомления',
-            onTap: () {},
+            onTap: () => context.push('/notifications'),
           ),
           _MenuTile(
             icon: Icons.settings_outlined,

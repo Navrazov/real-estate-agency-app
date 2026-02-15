@@ -13,6 +13,7 @@ import '../../features/chat/presentation/screens/chat_screen.dart';
 import '../../features/profile/presentation/screens/user_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_menu_screen.dart';
 import '../../features/profile/presentation/screens/settings_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../auth/auth_service.dart';
 
 class AppRouter {
@@ -135,6 +136,11 @@ class AppRouter {
             final id = state.pathParameters['id']!;
             return UserProfileScreen(userId: id);
           },
+        ),
+        GoRoute(
+          path: '/notifications',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const NotificationsScreen(),
         ),
         GoRoute(
           path: '/settings',

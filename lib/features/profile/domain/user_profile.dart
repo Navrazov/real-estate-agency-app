@@ -23,6 +23,23 @@ class UserProfile {
 
   String get displayName => name ?? email.split('@').first;
 
+  UserProfile copyWith({
+    String? lastSeen,
+    bool? online,
+  }) {
+    return UserProfile(
+      id: id,
+      name: name,
+      email: email,
+      phone: phone,
+      avatar: avatar,
+      createdAt: createdAt,
+      lastSeen: lastSeen ?? this.lastSeen,
+      online: online ?? this.online,
+      listings: listings,
+    );
+  }
+
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
       id: json['id'] as String,

@@ -5,6 +5,7 @@ import '../app/theme/app_theme.dart';
 import '../core/auth/auth_service.dart';
 import '../core/socket/socket_service.dart';
 import '../features/chat/data/chat_repository.dart';
+import '../features/notifications/data/notifications_repository.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key, required this.navigationShell});
@@ -17,16 +18,22 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   final _chatRepo = ChatRepository();
+  final _notifRepo = NotificationsRepository();
   final _socketService = SocketService();
   int _unreadMessages = 0;
+  int _unreadNotifications = 0;
   Timer? _unreadTimer;
 
   @override
   void initState() {
     super.initState();
     _loadUnreadCount();
+    _loadNotificationCount();
     _setupSocket();
-    _unreadTimer = Timer.periodic(const Duration(seconds: 30), (_) => _loadUnreadCount());
+    _unreadTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _loadUnreadCount();
+      _loadNotificationCount();
+    });
   }
 
   Future<void> _setupSocket() async {
@@ -39,6 +46,14 @@ class _MainShellState extends State<MainShell> {
     _socketService.on('new_message', (_) {
       if (mounted) _loadUnreadCount();
     });
+    _socketService.on('notifications_count', (data) {
+      if (!mounted) return;
+      final count = (data as Map<String, dynamic>)['count'] as int? ?? 0;
+      setState(() => _unreadNotifications = count);
+    });
+    _socketService.on('notification', (_) {
+      if (mounted) _loadNotificationCount();
+    });
   }
 
   @override
@@ -46,6 +61,8 @@ class _MainShellState extends State<MainShell> {
     _unreadTimer?.cancel();
     _socketService.off('unread_count');
     _socketService.off('new_message');
+    _socketService.off('notifications_count');
+    _socketService.off('notification');
     super.dispose();
   }
 
@@ -55,6 +72,15 @@ class _MainShellState extends State<MainShell> {
       if (!auth.isLoggedIn) return;
       final count = await _chatRepo.getUnreadCount();
       if (mounted) setState(() => _unreadMessages = count);
+    } catch (_) {}
+  }
+
+  Future<void> _loadNotificationCount() async {
+    try {
+      final auth = AuthServiceScope.of(context);
+      if (!auth.isLoggedIn) return;
+      final count = await _notifRepo.getUnreadCount();
+      if (mounted) setState(() => _unreadNotifications = count);
     } catch (_) {}
   }
 
@@ -105,8 +131,15 @@ class _MainShellState extends State<MainShell> {
               ),
               label: 'Сообщения',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
+            BottomNavigationBarItem(
+              icon: Badge(
+                isLabelVisible: _unreadNotifications > 0,
+                label: Text(
+                  _unreadNotifications > 99 ? '99+' : '$_unreadNotifications',
+                  style: const TextStyle(fontSize: 10),
+                ),
+                child: const Icon(Icons.person_outline),
+              ),
               label: 'Профиль',
             ),
           ],

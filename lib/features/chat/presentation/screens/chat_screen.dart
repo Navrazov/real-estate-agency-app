@@ -32,6 +32,8 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _sending = false;
   String? _error;
   UserProfile? _otherUserProfile;
+  bool _isTyping = false;
+  int _lastTypingEmit = 0;
 
   @override
   void initState() {
@@ -89,6 +91,44 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
     });
+    // Online/offline status updates
+    _socketService.on('user_online', (data) {
+      if (!mounted) return;
+      final uid = (data as Map<String, dynamic>)['userId'] as String;
+      if (uid == widget.otherUserId && _otherUserProfile != null) {
+        setState(() {
+          _otherUserProfile = _otherUserProfile!.copyWith(online: true);
+        });
+      }
+    });
+    _socketService.on('user_offline', (data) {
+      if (!mounted) return;
+      final map = data as Map<String, dynamic>;
+      final uid = map['userId'] as String;
+      if (uid == widget.otherUserId && _otherUserProfile != null) {
+        setState(() {
+          _otherUserProfile = _otherUserProfile!.copyWith(
+            online: false,
+            lastSeen: map['lastSeen'] as String?,
+          );
+          _isTyping = false;
+        });
+      }
+    });
+    // Typing indicator
+    _socketService.on('typing', (data) {
+      if (!mounted) return;
+      final map = data as Map<String, dynamic>;
+      final convId = map['conversationId'] as String;
+      final uid = map['userId'] as String;
+      if (convId == widget.conversationId && uid == widget.otherUserId) {
+        setState(() => _isTyping = true);
+        // Auto-clear after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) setState(() => _isTyping = false);
+        });
+      }
+    });
   }
 
   @override
@@ -97,6 +137,9 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollController.dispose();
     _socketService.off('new_message');
     _socketService.off('messages_read');
+    _socketService.off('user_online');
+    _socketService.off('user_offline');
+    _socketService.off('typing');
     super.dispose();
   }
 
@@ -137,6 +180,14 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     });
+  }
+
+  void _onTextChanged(String _) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - _lastTypingEmit > 2000) {
+      _lastTypingEmit = now;
+      _socketService.emit('typing', {'conversationId': widget.conversationId});
+    }
   }
 
   Future<void> _send() async {
@@ -266,7 +317,16 @@ class _ChatScreenState extends State<ChatScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(_otherUserProfile?.displayName ?? 'Чат'),
-              if (_otherUserProfile != null)
+              if (_isTyping)
+                const Text(
+                  'печатает...',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.normal,
+                    color: Colors.green,
+                  ),
+                )
+              else if (_otherUserProfile != null)
                 Row(
                   children: [
                     if (_otherUserProfile!.online || _formatLastSeen(_otherUserProfile!.lastSeen, _otherUserProfile!.online) == 'в сети')
@@ -476,6 +536,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   fillColor: AppColors.surface,
                                 ),
                                 textInputAction: TextInputAction.send,
+                                onChanged: _onTextChanged,
                                 onSubmitted: (_) => _send(),
                               ),
                             ),
