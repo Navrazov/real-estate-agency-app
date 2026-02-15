@@ -178,12 +178,12 @@ class _ListingsScreenState extends State<ListingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
+        title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.home_work_rounded, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text('EstateHub'),
+            Icon(Icons.home_work_rounded, color: context.appColors.primary),
+            const SizedBox(width: 8),
+            const Text('EstateHub'),
           ],
         ),
       ),
@@ -192,9 +192,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
           // Search & Filters Bar
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceWhite,
-              border: Border(bottom: BorderSide(color: AppColors.border)),
+            decoration: BoxDecoration(
+              color: context.appColors.surfaceWhite,
+              border: Border(bottom: BorderSide(color: context.appColors.border)),
             ),
             child: Column(
               children: [
@@ -232,9 +232,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
                         icon: Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list, size: 20),
                         style: IconButton.styleFrom(
                           backgroundColor: _showFilters
-                              ? AppColors.primary
-                              : AppColors.primary.withOpacity(0.1),
-                          foregroundColor: _showFilters ? Colors.white : AppColors.primary,
+                              ? context.appColors.primary
+                              : context.appColors.primary.withValues(alpha: 0.1),
+                          foregroundColor: _showFilters ? Colors.white : context.appColors.primary,
                         ),
                       ),
                     ),
@@ -267,7 +267,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                            Icon(Icons.error_outline, size: 48, color: context.appColors.error),
                             const SizedBox(height: 16),
                             Text(_error!, textAlign: TextAlign.center),
                             const SizedBox(height: 16),
@@ -356,9 +356,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              const Padding(
-                padding: EdgeInsets.only(right: 8),
-                child: Text('Оплата:', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text('Оплата:', style: TextStyle(color: context.appColors.textSecondary, fontSize: 13)),
               ),
               _FilterChip(
                 label: 'Любая',
@@ -516,7 +516,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
         const SizedBox(height: 12),
         Row(
           children: [
-            const Text('Сортировка:', style: TextStyle(color: AppColors.textSecondary)),
+            Text('Сортировка:', style: TextStyle(color: context.appColors.textSecondary)),
             const SizedBox(width: 12),
             Expanded(
               child: SingleChildScrollView(
@@ -661,7 +661,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
                   margin: const EdgeInsets.only(right: 12),
                   child: Card(
                     elevation: isSelected ? 4 : 0,
-                    color: isSelected ? AppColors.primary.withOpacity(0.05) : null,
+                    color: isSelected ? context.appColors.primary.withValues(alpha: 0.05) : null,
                     child: InkWell(
                       onTap: () => context.push('/listing/${l.id}'),
                       borderRadius: BorderRadius.circular(16),
@@ -681,7 +681,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
                                   : Container(
                                       width: 60,
                                       height: 60,
-                                      color: AppColors.surface,
+                                      color: context.appColors.surface,
                                       child: const Center(child: Text('🏠')),
                                     ),
                             ),
@@ -705,8 +705,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
                                     ),
                                   Text(
                                     _formatPrice(l.price),
-                                    style: const TextStyle(
-                                      color: AppColors.primary,
+                                    style: TextStyle(
+                                      color: context.appColors.primary,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -738,9 +738,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Попробуйте изменить параметры поиска',
-            style: TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: context.appColors.textSecondary),
           ),
           const SizedBox(height: 24),
           OutlinedButton(
@@ -772,8 +772,8 @@ class _FilterChip extends StatelessWidget {
         label: Text(label),
         selected: selected,
         onSelected: (_) => onTap(),
-        selectedColor: AppColors.primary.withOpacity(0.2),
-        checkmarkColor: AppColors.primary,
+        selectedColor: context.appColors.primary.withValues(alpha: 0.2),
+        checkmarkColor: context.appColors.primary,
       ),
     );
   }
@@ -801,14 +801,14 @@ class _SortChip extends StatelessWidget {
             ? Icon(
                 ascending ? Icons.arrow_upward : Icons.arrow_downward,
                 size: 16,
-                color: AppColors.primary,
+                color: context.appColors.primary,
               )
             : null,
         label: Text(label),
         onPressed: onTap,
-        backgroundColor: selected ? AppColors.primary.withOpacity(0.1) : null,
+        backgroundColor: selected ? context.appColors.primary.withValues(alpha: 0.1) : null,
         side: BorderSide(
-          color: selected ? AppColors.primary : AppColors.border,
+          color: selected ? context.appColors.primary : context.appColors.border,
         ),
       ),
     );
@@ -851,12 +851,12 @@ class _CompactListingCard extends StatelessWidget {
                           listing.images.first,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
-                            color: AppColors.surface,
+                            color: context.appColors.surface,
                             child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
                           ),
                         )
                       : Container(
-                          color: AppColors.surface,
+                          color: context.appColors.surface,
                           child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
                         ),
                 ),
@@ -870,13 +870,13 @@ class _CompactListingCard extends StatelessWidget {
                       width: 30,
                       height: 30,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         listing.isFavorite ? Icons.favorite : Icons.favorite_border,
                         size: 16,
-                        color: listing.isFavorite ? AppColors.error : AppColors.textMuted,
+                        color: listing.isFavorite ? context.appColors.error : context.appColors.textMuted,
                       ),
                     ),
                   ),
@@ -898,10 +898,10 @@ class _CompactListingCard extends StatelessWidget {
                       ),
                     Text(
                       formatPrice(listing.price),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: context.appColors.primary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -929,9 +929,9 @@ class _CompactListingCard extends StatelessWidget {
                                 ? '${listing.floor}/${listing.totalFloors} эт.'
                                 : '${listing.floor} эт.',
                         ].join(' \u00B7 '),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: context.appColors.textSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -940,13 +940,13 @@ class _CompactListingCard extends StatelessWidget {
                     // Address
                     Row(
                       children: [
-                        const Icon(Icons.location_on_outlined, size: 12, color: AppColors.textMuted),
+                        Icon(Icons.location_on_outlined, size: 12, color: context.appColors.textMuted),
                         const SizedBox(width: 2),
                         Expanded(
                           child: Text(
                             listing.address,
-                            style: const TextStyle(
-                              color: AppColors.textMuted,
+                            style: TextStyle(
+                              color: context.appColors.textMuted,
                               fontSize: 11,
                             ),
                             maxLines: 1,

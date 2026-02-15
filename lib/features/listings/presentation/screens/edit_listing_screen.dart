@@ -255,7 +255,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_error!, style: const TextStyle(color: AppColors.error)),
+              Text(_error!, style: TextStyle(color: context.appColors.error)),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => context.pop(),
@@ -289,15 +289,15 @@ class _EditListingScreenState extends State<EditListingScreen> {
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withAlpha(25),
+                  color: context.appColors.error.withAlpha(25),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.error.withAlpha(76)),
+                  border: Border.all(color: context.appColors.error.withAlpha(76)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.error),
+                    Icon(Icons.error_outline, color: context.appColors.error),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.error))),
+                    Expanded(child: Text(_error!, style: TextStyle(color: context.appColors.error))),
                   ],
                 ),
               ),
@@ -306,9 +306,9 @@ class _EditListingScreenState extends State<EditListingScreen> {
             Row(
               children: [
                 const Text('Фотографии', style: TextStyle(fontWeight: FontWeight.w600)),
-                const Text(' *', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600)),
+                Text(' *', style: TextStyle(color: context.appColors.error, fontWeight: FontWeight.w600)),
                 const SizedBox(width: 8),
-                Text('Минимум 1 фото', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                Text('Минимум 1 фото', style: TextStyle(fontSize: 12, color: context.appColors.textMuted)),
               ],
             ),
             const SizedBox(height: 8),
@@ -317,14 +317,14 @@ class _EditListingScreenState extends State<EditListingScreen> {
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.border, width: 2),
+                  border: Border.all(color: context.appColors.border, width: 2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.add_photo_alternate_outlined, size: 48, color: AppColors.textMuted),
+                    Icon(Icons.add_photo_alternate_outlined, size: 48, color: context.appColors.textMuted),
                     const SizedBox(height: 8),
-                    Text('Добавить фото', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500)),
+                    Text('Добавить фото', style: TextStyle(color: context.appColors.primary, fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -354,7 +354,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
                             onTap: () => _removeImage(index),
                             child: Container(
                               width: 24, height: 24,
-                              decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
+                              decoration: BoxDecoration(color: context.appColors.error, shape: BoxShape.circle),
                               child: const Icon(Icons.close, size: 16, color: Colors.white),
                             ),
                           ),
@@ -388,7 +388,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
                   label: Text('${type.icon} ${type.label}'),
                   selected: selected,
                   onSelected: (_) => setState(() => _propertyType = type),
-                  selectedColor: AppColors.primary.withAlpha(51),
+                  selectedColor: context.appColors.primary.withAlpha(51),
                 );
               }).toList(),
             ),
@@ -406,7 +406,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
                     label: Text('${type.icon} ${type.label}'),
                     selected: selected,
                     onSelected: (_) => setState(() => _apartmentType = type),
-                    selectedColor: AppColors.primary.withAlpha(51),
+                    selectedColor: context.appColors.primary.withAlpha(51),
                   );
                 }).toList(),
               ),
@@ -439,7 +439,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
                       label: Text(s.label),
                       selected: selected,
                       onSelected: (_) => setState(() => _status = s),
-                      selectedColor: AppColors.primary.withAlpha(51),
+                      selectedColor: context.appColors.primary.withAlpha(51),
                     );
                   }).toList(),
                 );
@@ -489,7 +489,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
               if (digits.isEmpty) return const SizedBox.shrink();
               return Padding(
                 padding: const EdgeInsets.only(top: 4, left: 16),
-                child: Text('${_formatNumber(digits)} ₽', style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w500)),
+                child: Text('${_formatNumber(digits)} ₽', style: TextStyle(fontSize: 13, color: context.appColors.primary, fontWeight: FontWeight.w500)),
               );
             }),
             const SizedBox(height: 16),
@@ -514,16 +514,16 @@ class _EditListingScreenState extends State<EditListingScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: selected ? AppColors.primary : Colors.grey.shade300,
+                            color: selected ? context.appColors.primary : Colors.grey.shade300,
                             width: selected ? 2 : 1,
                           ),
-                          color: selected ? AppColors.primary.withAlpha(20) : Colors.white,
+                          color: selected ? context.appColors.primary.withAlpha(20) : context.appColors.surfaceWhite,
                         ),
                         child: Column(
                           children: [
                             Text(type.icon, style: const TextStyle(fontSize: 24)),
                             const SizedBox(height: 4),
-                            Text(type.label, style: TextStyle(fontWeight: FontWeight.w600, color: selected ? AppColors.primary : AppColors.textSecondary)),
+                            Text(type.label, style: TextStyle(fontWeight: FontWeight.w600, color: selected ? context.appColors.primary : context.appColors.textSecondary)),
                           ],
                         ),
                       ),

@@ -84,7 +84,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_error!, style: const TextStyle(color: AppColors.error)),
+                      Text(_error!, style: TextStyle(color: context.appColors.error)),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadFavorites,
@@ -105,9 +105,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             'Добавляйте понравившиеся объекты',
-                            style: TextStyle(color: AppColors.textSecondary),
+                            style: TextStyle(color: context.appColors.textSecondary),
                           ),
                           const SizedBox(height: 24),
                           ElevatedButton(
@@ -173,7 +173,7 @@ class _FavoriteCard extends StatelessWidget {
                           fit: BoxFit.cover,
                         )
                       : Container(
-                          color: AppColors.surface,
+                          color: context.appColors.surface,
                           child: const Center(
                             child: Text('🏠', style: TextStyle(fontSize: 32)),
                           ),
@@ -187,12 +187,12 @@ class _FavoriteCard extends StatelessWidget {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.favorite,
-                          color: AppColors.error,
+                          color: context.appColors.error,
                           size: 18,
                         ),
                       ),
@@ -211,15 +211,15 @@ class _FavoriteCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: context.appColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         listing.propertyType.label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.primary,
+                          color: context.appColors.primary,
                         ),
                       ),
                     ),
@@ -241,17 +241,17 @@ class _FavoriteCard extends StatelessWidget {
                       ),
                     Text(
                       formatPrice(listing.price),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: context.appColors.primary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       listing.address,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: context.appColors.textSecondary,
                         fontSize: 13,
                       ),
                       maxLines: 1,

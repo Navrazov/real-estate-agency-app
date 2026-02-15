@@ -79,8 +79,8 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_forever, color: AppColors.error),
-              title: const Text('Удалить у всех', style: TextStyle(color: AppColors.error)),
+              leading: Icon(Icons.delete_forever, color: context.appColors.error),
+              title: Text('Удалить у всех', style: TextStyle(color: context.appColors.error)),
               onTap: () {
                 Navigator.pop(ctx);
                 _deleteConversation(conv.id, forBoth: true);
@@ -141,7 +141,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      Icon(Icons.error_outline, size: 48, color: context.appColors.error),
                       const SizedBox(height: 16),
                       Text(_error!, textAlign: TextAlign.center),
                       const SizedBox(height: 16),
@@ -154,12 +154,12 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.chat_bubble_outline, size: 64, color: AppColors.textMuted),
+                          Icon(Icons.chat_bubble_outline, size: 64, color: context.appColors.textMuted),
                           const SizedBox(height: 16),
-                          const Text(
+                          Text(
                             'Войдите, чтобы просматривать сообщения',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: AppColors.textSecondary),
+                            style: TextStyle(color: context.appColors.textSecondary),
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton(
@@ -170,24 +170,24 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                       ),
                     )
                   : _conversations.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.chat_bubble_outline, size: 64, color: AppColors.textMuted),
-                              SizedBox(height: 16),
+                              Icon(Icons.chat_bubble_outline, size: 64, color: context.appColors.textMuted),
+                              const SizedBox(height: 16),
                               Text(
                                 'Нет диалогов',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textSecondary,
+                                  color: context.appColors.textSecondary,
                                 ),
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               Text(
                                 'Начните диалог на странице объявления',
-                                style: TextStyle(color: AppColors.textMuted),
+                                style: TextStyle(color: context.appColors.textMuted),
                               ),
                             ],
                           ),
@@ -210,11 +210,11 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                                 leading: Stack(
                                   children: [
                                     CircleAvatar(
-                                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                                      backgroundColor: context.appColors.primary.withValues(alpha: 0.1),
                                       child: Text(
                                         initial,
-                                        style: const TextStyle(
-                                          color: AppColors.primary,
+                                        style: TextStyle(
+                                          color: context.appColors.primary,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -246,9 +246,9 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                                     ),
                                     Text(
                                       _formatTime(conv.lastMessageAt),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.textMuted,
+                                        color: context.appColors.textMuted,
                                       ),
                                     ),
                                   ],
@@ -261,9 +261,9 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                                         conv.listingTitle!,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 12,
-                                          color: AppColors.primary,
+                                          color: context.appColors.primary,
                                         ),
                                       ),
                                     Row(
@@ -275,8 +275,8 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               color: conv.unreadCount > 0
-                                                  ? AppColors.textPrimary
-                                                  : AppColors.textSecondary,
+                                                  ? context.appColors.textPrimary
+                                                  : context.appColors.textSecondary,
                                               fontWeight: conv.unreadCount > 0
                                                   ? FontWeight.w600
                                                   : FontWeight.normal,
@@ -291,7 +291,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: AppColors.primary,
+                                              color: context.appColors.primary,
                                               borderRadius: BorderRadius.circular(12),
                                             ),
                                             child: Text(

@@ -234,8 +234,8 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             if (isMine)
               ListTile(
-                leading: const Icon(Icons.delete_forever, color: AppColors.error),
-                title: const Text('Удалить у всех', style: TextStyle(color: AppColors.error)),
+                leading: Icon(Icons.delete_forever, color: context.appColors.error),
+                title: Text('Удалить у всех', style: TextStyle(color: context.appColors.error)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _deleteMessage(msg.id, forBoth: true);
@@ -365,7 +365,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      Icon(Icons.error_outline, size: 48, color: context.appColors.error),
                       const SizedBox(height: 16),
                       Text(_error!, textAlign: TextAlign.center),
                       const SizedBox(height: 16),
@@ -378,10 +378,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     // Messages
                     Expanded(
                       child: _messages.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Text(
                                 'Нет сообщений. Начните диалог!',
-                                style: TextStyle(color: AppColors.textMuted),
+                                style: TextStyle(color: context.appColors.textMuted),
                               ),
                             )
                           : ListView.builder(
@@ -403,14 +403,14 @@ class _ChatScreenState extends State<ChatScreen> {
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                             decoration: BoxDecoration(
-                                              color: AppColors.surface,
+                                              color: context.appColors.surface,
                                               borderRadius: BorderRadius.circular(12),
                                             ),
                                             child: Text(
                                               _formatDateSeparator(msgDate),
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 12,
-                                                color: AppColors.textMuted,
+                                                color: context.appColors.textMuted,
                                                 fontWeight: FontWeight.w500,
                                               ),
                                             ),
@@ -433,7 +433,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                               decoration: BoxDecoration(
                                                 color: isMine
                                                     ? AppColors.primary
-                                                    : AppColors.surface,
+                                                    : context.appColors.surface,
                                                 borderRadius: BorderRadius.only(
                                                   topLeft: const Radius.circular(16),
                                                   topRight: const Radius.circular(16),
@@ -455,7 +455,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                     Text(
                                                       msg.text,
                                                       style: TextStyle(
-                                                        color: isMine ? Colors.white : AppColors.textPrimary,
+                                                        color: isMine ? Colors.white : context.appColors.textPrimary,
                                                         fontSize: 15,
                                                       ),
                                                     ),
@@ -470,7 +470,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                               fontSize: 11,
                                                               color: isMine
                                                                   ? Colors.white.withValues(alpha: 0.7)
-                                                                  : AppColors.textMuted,
+                                                                  : context.appColors.textMuted,
                                                             ),
                                                           ),
                                                           if (isMine) ...[
@@ -503,9 +503,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     // Input
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: const BoxDecoration(
-                        color: AppColors.surfaceWhite,
-                        border: Border(top: BorderSide(color: AppColors.border)),
+                      decoration: BoxDecoration(
+                        color: context.appColors.surfaceWhite,
+                        border: Border(top: BorderSide(color: context.appColors.border)),
                       ),
                       child: SafeArea(
                         child: Row(
@@ -515,25 +515,25 @@ class _ChatScreenState extends State<ChatScreen> {
                                 controller: _controller,
                                 decoration: InputDecoration(
                                   hintText: 'Введите сообщение...',
-                                  hintStyle: const TextStyle(color: AppColors.textMuted),
+                                  hintStyle: TextStyle(color: context.appColors.textMuted),
                                   contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 16,
                                     vertical: 12,
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(24),
-                                    borderSide: const BorderSide(color: AppColors.border),
+                                    borderSide: BorderSide(color: context.appColors.border),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(24),
-                                    borderSide: const BorderSide(color: AppColors.border),
+                                    borderSide: BorderSide(color: context.appColors.border),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(24),
-                                    borderSide: const BorderSide(color: AppColors.primary),
+                                    borderSide: BorderSide(color: context.appColors.primary),
                                   ),
                                   filled: true,
-                                  fillColor: AppColors.surface,
+                                  fillColor: context.appColors.surface,
                                 ),
                                 textInputAction: TextInputAction.send,
                                 onChanged: _onTextChanged,

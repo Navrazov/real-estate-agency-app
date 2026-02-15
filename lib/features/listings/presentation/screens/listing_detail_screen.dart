@@ -82,7 +82,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Удалить', style: TextStyle(color: AppColors.error)),
+            child: Text('Удалить', style: TextStyle(color: context.appColors.error)),
           ),
         ],
       ),
@@ -125,7 +125,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      Icon(Icons.error_outline, size: 48, color: context.appColors.error),
                       const SizedBox(height: 16),
                       Text(_error!, textAlign: TextAlign.center),
                       const SizedBox(height: 16),
@@ -145,10 +145,10 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                             icon: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+                              child: Icon(Icons.arrow_back, color: context.appColors.textPrimary),
                             ),
                             onPressed: () => context.pop(),
                           ),
@@ -157,12 +157,12 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                               icon: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   _isFavorite ? Icons.favorite : Icons.favorite_border,
-                                  color: _isFavorite ? AppColors.error : AppColors.textPrimary,
+                                  color: _isFavorite ? context.appColors.error : context.appColors.textPrimary,
                                 ),
                               ),
                               onPressed: _toggleFavorite,
@@ -172,10 +172,10 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 icon: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.white.withValues(alpha: 0.9),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.edit, color: AppColors.textPrimary),
+                                  child: Icon(Icons.edit, color: context.appColors.textPrimary),
                                 ),
                                 onPressed: () => context.push('/listing/${widget.listingId}/edit'),
                               ),
@@ -183,10 +183,10 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 icon: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.white.withValues(alpha: 0.9),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.delete_outline, color: AppColors.error),
+                                  child: Icon(Icons.delete_outline, color: context.appColors.error),
                                 ),
                                 onPressed: _delete,
                               ),
@@ -205,7 +205,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                           images[i],
                                           fit: BoxFit.cover,
                                           errorBuilder: (_, __, ___) => Container(
-                                            color: AppColors.surface,
+                                            color: context.appColors.surface,
                                             child: const Center(
                                               child: Text('🏠', style: TextStyle(fontSize: 64)),
                                             ),
@@ -213,7 +213,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                         ),
                                       )
                                     : Container(
-                                        color: AppColors.surface,
+                                        color: context.appColors.surface,
                                         child: const Center(
                                           child: Text('🏠', style: TextStyle(fontSize: 64)),
                                         ),
@@ -231,7 +231,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                         end: Alignment.bottomCenter,
                                         colors: [
                                           Colors.transparent,
-                                          Colors.black.withOpacity(0.3),
+                                          Colors.black.withValues(alpha: 0.3),
                                         ],
                                       ),
                                     ),
@@ -255,7 +255,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                             borderRadius: BorderRadius.circular(4),
                                             color: i == _imageIndex
                                                 ? Colors.white
-                                                : Colors.white.withOpacity(0.5),
+                                                : Colors.white.withValues(alpha: 0.5),
                                           ),
                                         ),
                                       ),
@@ -280,15 +280,15 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                   children: [
                                     _Badge(
                                       text: _listing!.propertyType.label,
-                                      color: AppColors.primary,
+                                      color: context.appColors.primary,
                                     ),
                                     _Badge(
                                       text: _listing!.status.label,
                                       color: _listing!.status == ListingStatus.active
-                                          ? AppColors.success
+                                          ? context.appColors.success
                                           : _listing!.status == ListingStatus.sold
-                                              ? AppColors.error
-                                              : AppColors.accent,
+                                              ? context.appColors.error
+                                              : context.appColors.accent,
                                     ),
                                   ],
                                 ),
@@ -316,10 +316,10 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                   ),
                                 Text(
                                   _formatPrice(_listing!.price),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 28,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
+                                    color: context.appColors.primary,
                                   ),
                                 ),
 
@@ -375,7 +375,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     '💵 Наличные',
-                                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                                    style: TextStyle(fontSize: 14, color: context.appColors.textSecondary),
                                   ),
                                 ],
                                 const SizedBox(height: 12),
@@ -383,17 +383,17 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 // Address
                                 Row(
                                   children: [
-                                    const Icon(
+                                    Icon(
                                       Icons.location_on_outlined,
                                       size: 18,
-                                      color: AppColors.textSecondary,
+                                      color: context.appColors.textSecondary,
                                     ),
                                     const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
                                         _listing!.address,
-                                        style: const TextStyle(
-                                          color: AppColors.textSecondary,
+                                        style: TextStyle(
+                                          color: context.appColors.textSecondary,
                                           fontSize: 15,
                                         ),
                                       ),
@@ -406,7 +406,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: AppColors.surface,
+                                    color: context.appColors.surface,
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: Row(
@@ -453,10 +453,10 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                 const SizedBox(height: 12),
                                 Text(
                                   _listing!.description,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     height: 1.6,
-                                    color: AppColors.textSecondary,
+                                    color: context.appColors.textSecondary,
                                   ),
                                 ),
 
@@ -498,19 +498,19 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                     child: Container(
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
-                                        color: AppColors.surfaceWhite,
+                                        color: context.appColors.surfaceWhite,
                                         borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(color: AppColors.border),
+                                        border: Border.all(color: context.appColors.border),
                                       ),
                                       child: Row(
                                         children: [
                                           CircleAvatar(
                                             radius: 24,
-                                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                                            backgroundColor: context.appColors.primary.withValues(alpha: 0.1),
                                             child: Text(
                                               _listing!.authorName!.substring(0, 1).toUpperCase(),
-                                              style: const TextStyle(
-                                                color: AppColors.primary,
+                                              style: TextStyle(
+                                                color: context.appColors.primary,
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 18,
                                               ),
@@ -521,10 +521,10 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                const Text(
+                                                Text(
                                                   'Продавец',
                                                   style: TextStyle(
-                                                    color: AppColors.textMuted,
+                                                    color: context.appColors.textMuted,
                                                     fontSize: 12,
                                                   ),
                                                 ),
@@ -538,8 +538,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                                 if (_listing!.authorPhone != null)
                                                   Text(
                                                     _listing!.authorPhone!,
-                                                    style: const TextStyle(
-                                                      color: AppColors.primary,
+                                                    style: TextStyle(
+                                                      color: context.appColors.primary,
                                                       fontSize: 14,
                                                     ),
                                                   ),
@@ -570,11 +570,11 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
           ? Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surfaceWhite,
-                border: const Border(top: BorderSide(color: AppColors.border)),
+                color: context.appColors.surfaceWhite,
+                border: Border(top: BorderSide(color: context.appColors.border)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, -4),
                   ),
@@ -588,7 +588,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                         onPressed: _toggleFavorite,
                         icon: Icon(
                           _isFavorite ? Icons.favorite : Icons.favorite_border,
-                          color: _isFavorite ? AppColors.error : null,
+                          color: _isFavorite ? context.appColors.error : null,
                         ),
                         label: Text(_isFavorite ? 'В избранном' : 'В избранное'),
                         style: OutlinedButton.styleFrom(
@@ -655,7 +655,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -685,7 +685,7 @@ class _FeatureItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: AppColors.primary, size: 24),
+        Icon(icon, color: context.appColors.primary, size: 24),
         const SizedBox(height: 8),
         Text(
           value,
@@ -696,9 +696,9 @@ class _FeatureItem extends StatelessWidget {
         ),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: AppColors.textMuted,
+            color: context.appColors.textMuted,
           ),
         ),
       ],

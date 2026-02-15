@@ -56,7 +56,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Удалить', style: TextStyle(color: AppColors.error)),
+            child: Text('Удалить', style: TextStyle(color: context.appColors.error)),
           ),
         ],
       ),
@@ -105,7 +105,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_error!, style: const TextStyle(color: AppColors.error)),
+                      Text(_error!, style: TextStyle(color: context.appColors.error)),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadListings,
@@ -126,9 +126,9 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
+                          Text(
                             'Вы ещё не разместили ни одного объявления',
-                            style: TextStyle(color: AppColors.textSecondary),
+                            style: TextStyle(color: context.appColors.textSecondary),
                           ),
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
@@ -204,7 +204,7 @@ class _ListingCard extends StatelessWidget {
                           fit: BoxFit.cover,
                         )
                       : Container(
-                          color: AppColors.surface,
+                          color: context.appColors.surface,
                           child: const Center(
                             child: Text('🏠', style: TextStyle(fontSize: 32)),
                           ),
@@ -223,7 +223,7 @@ class _ListingCard extends StatelessWidget {
                           children: [
                             _Badge(
                               text: listing.propertyType.label,
-                              color: AppColors.primary,
+                              color: context.appColors.primary,
                             ),
                             if (listing.moderationStatus == ModerationStatus.pending)
                               _Badge(
@@ -233,15 +233,15 @@ class _ListingCard extends StatelessWidget {
                             if (listing.moderationStatus == ModerationStatus.rejected)
                               _Badge(
                                 text: 'Отклонено',
-                                color: AppColors.error,
+                                color: context.appColors.error,
                               ),
                             if (listing.moderationStatus == ModerationStatus.approved &&
                                 listing.status != ListingStatus.active)
                               _Badge(
                                 text: listing.status.label,
                                 color: listing.status == ListingStatus.sold
-                                    ? AppColors.error
-                                    : AppColors.accent,
+                                    ? context.appColors.error
+                                    : context.appColors.accent,
                               ),
                           ],
                         ),
@@ -263,25 +263,25 @@ class _ListingCard extends StatelessWidget {
                           ),
                         Text(
                           formatPrice(listing.price),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: context.appColors.primary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.visibility_outlined,
                               size: 16,
-                              color: AppColors.textMuted,
+                              color: context.appColors.textMuted,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '${listing.views}',
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
+                              style: TextStyle(
+                                color: context.appColors.textMuted,
                                 fontSize: 12,
                               ),
                             ),
@@ -308,8 +308,8 @@ class _ListingCard extends StatelessWidget {
                   Expanded(
                     child: TextButton.icon(
                       onPressed: onDelete,
-                      icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                      label: const Text('Удалить', style: TextStyle(color: AppColors.error)),
+                      icon: Icon(Icons.delete_outline, size: 18, color: context.appColors.error),
+                      label: Text('Удалить', style: TextStyle(color: context.appColors.error)),
                     ),
                   ),
                 ],
@@ -333,7 +333,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(

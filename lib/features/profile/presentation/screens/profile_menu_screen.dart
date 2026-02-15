@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
+import '../../../../core/theme/theme_service.dart';
 
 class ProfileMenuScreen extends StatelessWidget {
   const ProfileMenuScreen({super.key});
@@ -10,6 +11,8 @@ class ProfileMenuScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = AuthServiceScope.of(context);
     final user = auth.user;
+    final colors = context.appColors;
+    final themeService = ThemeServiceScope.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -22,23 +25,23 @@ class ProfileMenuScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.surfaceWhite,
+              color: colors.surfaceWhite,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: colors.border),
             ),
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 32,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundColor: colors.primary.withValues(alpha: 0.1),
                   backgroundImage: user?.avatar != null ? NetworkImage(user!.avatar!) : null,
                   child: user?.avatar == null
                       ? Text(
                           user?.displayName.substring(0, 1).toUpperCase() ?? 'U',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
+                            color: colors.primary,
                           ),
                         )
                       : null,
@@ -58,8 +61,8 @@ class ProfileMenuScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         user?.email ?? '',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        style: TextStyle(
+                          color: colors.textSecondary,
                           fontSize: 14,
                         ),
                       ),
@@ -67,8 +70,8 @@ class ProfileMenuScreen extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           user!.phone!,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: colors.textSecondary,
                             fontSize: 14,
                           ),
                         ),
@@ -80,6 +83,30 @@ class ProfileMenuScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
+
+          // Theme toggle
+          Container(
+            margin: const EdgeInsets.only(bottom: 1),
+            decoration: BoxDecoration(
+              color: colors.surfaceWhite,
+              border: Border.all(color: colors.border, width: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              leading: Icon(
+                context.isDark ? Icons.dark_mode : Icons.light_mode,
+                color: colors.textSecondary,
+              ),
+              title: Text(context.isDark ? 'Тёмная тема' : 'Светлая тема'),
+              trailing: Switch(
+                value: context.isDark,
+                onChanged: (_) => themeService.toggleTheme(),
+                activeThumbColor: colors.primary,
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 8),
 
           // Menu items
           _MenuTile(
@@ -114,11 +141,11 @@ class ProfileMenuScreen extends StatelessWidget {
                   const SnackBar(content: Text('Вы вышли из аккаунта')),
                 );
               },
-              icon: const Icon(Icons.logout, color: AppColors.error),
-              label: const Text('Выйти', style: TextStyle(color: AppColors.error)),
+              icon: Icon(Icons.logout, color: colors.error),
+              label: Text('Выйти', style: TextStyle(color: colors.error)),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                side: const BorderSide(color: AppColors.error),
+                side: BorderSide(color: colors.error),
               ),
             ),
           ),
@@ -141,17 +168,18 @@ class _MenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     return Container(
       margin: const EdgeInsets.only(bottom: 1),
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
-        border: Border.all(color: AppColors.border, width: 0.5),
+        color: colors.surfaceWhite,
+        border: Border.all(color: colors.border, width: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        leading: Icon(icon, color: AppColors.textSecondary),
+        leading: Icon(icon, color: colors.textSecondary),
         title: Text(title),
-        trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
+        trailing: Icon(Icons.chevron_right, color: colors.textMuted),
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),

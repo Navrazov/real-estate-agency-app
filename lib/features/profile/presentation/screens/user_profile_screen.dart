@@ -100,7 +100,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      Icon(Icons.error_outline, size: 48, color: context.appColors.error),
                       const SizedBox(height: 16),
                       Text(_error!, textAlign: TextAlign.center),
                       const SizedBox(height: 16),
@@ -122,24 +122,24 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
-                                    color: AppColors.surfaceWhite,
+                                    color: context.appColors.surfaceWhite,
                                     borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: AppColors.border),
+                                    border: Border.all(color: context.appColors.border),
                                   ),
                                   child: Column(
                                     children: [
                                       // Avatar
                                       CircleAvatar(
                                         radius: 40,
-                                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                                        backgroundColor: context.appColors.primary.withValues(alpha: 0.1),
                                         backgroundImage: _profile!.avatar != null
                                             ? NetworkImage(_profile!.avatar!)
                                             : null,
                                         child: _profile!.avatar == null
                                             ? Text(
                                                 _profile!.displayName[0].toUpperCase(),
-                                                style: const TextStyle(
-                                                  color: AppColors.primary,
+                                                style: TextStyle(
+                                                  color: context.appColors.primary,
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 32,
                                                 ),
@@ -180,8 +180,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                                 width: 10,
                                                 height: 10,
                                                 margin: const EdgeInsets.only(right: 6),
-                                                decoration: const BoxDecoration(
-                                                  color: AppColors.success,
+                                                decoration: BoxDecoration(
+                                                  color: context.appColors.success,
                                                   shape: BoxShape.circle,
                                                 ),
                                               ),
@@ -189,8 +189,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                               statusText,
                                               style: TextStyle(
                                                 color: _profile!.online
-                                                    ? AppColors.success
-                                                    : AppColors.textSecondary,
+                                                    ? context.appColors.success
+                                                    : context.appColors.textSecondary,
                                                 fontSize: 14,
                                               ),
                                             ),
@@ -203,13 +203,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.email_outlined,
-                                              size: 16, color: AppColors.textSecondary),
+                                          Icon(Icons.email_outlined,
+                                              size: 16, color: context.appColors.textSecondary),
                                           const SizedBox(width: 6),
                                           Text(
                                             _profile!.email,
-                                            style: const TextStyle(
-                                              color: AppColors.textSecondary,
+                                            style: TextStyle(
+                                              color: context.appColors.textSecondary,
                                               fontSize: 14,
                                             ),
                                           ),
@@ -222,13 +222,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Icon(Icons.phone_outlined,
-                                                size: 16, color: AppColors.textSecondary),
+                                            Icon(Icons.phone_outlined,
+                                                size: 16, color: context.appColors.textSecondary),
                                             const SizedBox(width: 6),
                                             Text(
                                               _profile!.phone!,
-                                              style: const TextStyle(
-                                                color: AppColors.textSecondary,
+                                              style: TextStyle(
+                                                color: context.appColors.textSecondary,
                                                 fontSize: 14,
                                               ),
                                             ),
@@ -240,8 +240,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       const SizedBox(height: 12),
                                       Text(
                                         _formatMemberSince(_profile!.createdAt),
-                                        style: const TextStyle(
-                                          color: AppColors.textMuted,
+                                        style: TextStyle(
+                                          color: context.appColors.textMuted,
                                           fontSize: 13,
                                         ),
                                       ),
@@ -298,13 +298,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: AppColors.primary.withOpacity(0.1),
+                                        color: context.appColors.primary.withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                       child: Text(
                                         '${_profile!.listings.length}',
-                                        style: const TextStyle(
-                                          color: AppColors.primary,
+                                        style: TextStyle(
+                                          color: context.appColors.primary,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
                                         ),
@@ -319,14 +319,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
                         // Listings list
                         if (_profile!.listings.isEmpty)
-                          const SliverToBoxAdapter(
+                          SliverToBoxAdapter(
                             child: Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
                               child: Center(
                                 child: Text(
                                   'Нет активных объявлений',
                                   style: TextStyle(
-                                    color: AppColors.textMuted,
+                                    color: context.appColors.textMuted,
                                     fontSize: 15,
                                   ),
                                 ),
@@ -382,9 +382,9 @@ class _ListingCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surfaceWhite,
+          color: context.appColors.surfaceWhite,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.appColors.border),
         ),
         child: Row(
           children: [
@@ -402,18 +402,18 @@ class _ListingCard extends StatelessWidget {
                         listing.images.first,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
-                          color: AppColors.surface,
-                          child: const Center(
+                          color: context.appColors.surface,
+                          child: Center(
                             child: Icon(Icons.home_outlined,
-                                size: 32, color: AppColors.textMuted),
+                                size: 32, color: context.appColors.textMuted),
                           ),
                         ),
                       )
                     : Container(
-                        color: AppColors.surface,
-                        child: const Center(
+                        color: context.appColors.surface,
+                        child: Center(
                           child: Icon(Icons.home_outlined,
-                              size: 32, color: AppColors.textMuted),
+                              size: 32, color: context.appColors.textMuted),
                         ),
                       ),
               ),
@@ -438,8 +438,8 @@ class _ListingCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       formatPrice(listing.price),
-                      style: const TextStyle(
-                        color: AppColors.primary,
+                      style: TextStyle(
+                        color: context.appColors.primary,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -449,8 +449,8 @@ class _ListingCard extends StatelessWidget {
                       listing.address,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: context.appColors.textSecondary,
                         fontSize: 13,
                       ),
                     ),
@@ -460,12 +460,12 @@ class _ListingCard extends StatelessWidget {
                         children: [
                           if (listing.rooms != null) ...[
                             Icon(Icons.bed_outlined,
-                                size: 14, color: AppColors.textMuted),
+                                size: 14, color: context.appColors.textMuted),
                             const SizedBox(width: 3),
                             Text(
                               '${listing.rooms}',
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
+                              style: TextStyle(
+                                color: context.appColors.textMuted,
                                 fontSize: 12,
                               ),
                             ),
@@ -474,12 +474,12 @@ class _ListingCard extends StatelessWidget {
                             const SizedBox(width: 10),
                           if (listing.area != null) ...[
                             Icon(Icons.square_foot,
-                                size: 14, color: AppColors.textMuted),
+                                size: 14, color: context.appColors.textMuted),
                             const SizedBox(width: 3),
                             Text(
                               '${listing.area!.toStringAsFixed(0)} м\u00B2',
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
+                              style: TextStyle(
+                                color: context.appColors.textMuted,
                                 fontSize: 12,
                               ),
                             ),
@@ -493,9 +493,9 @@ class _ListingCard extends StatelessWidget {
             ),
 
             // Arrow
-            const Padding(
-              padding: EdgeInsets.only(right: 12),
-              child: Icon(Icons.chevron_right, color: AppColors.textMuted),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Icon(Icons.chevron_right, color: context.appColors.textMuted),
             ),
           ],
         ),

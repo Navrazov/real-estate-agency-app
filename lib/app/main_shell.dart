@@ -89,8 +89,8 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       body: widget.navigationShell,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: context.appColors.border, width: 0.5)),
         ),
         child: BottomNavigationBar(
           currentIndex: widget.navigationShell.currentIndex,
@@ -101,9 +101,9 @@ class _MainShellState extends State<MainShell> {
             );
           },
           type: BottomNavigationBarType.fixed,
-          backgroundColor: AppColors.surfaceWhite,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textMuted,
+          backgroundColor: context.appColors.surfaceWhite,
+          selectedItemColor: context.appColors.primary,
+          unselectedItemColor: context.appColors.textMuted,
           selectedFontSize: 12,
           unselectedFontSize: 12,
           elevation: 0,

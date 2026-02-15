@@ -271,7 +271,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
@@ -301,8 +301,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               ? 'Шаг 1: Подтверждение телефона'
                               : 'Шаг 2: Личные данные')
                           : 'Войдите в аккаунт',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: context.appColors.textSecondary,
                         fontSize: 16,
                       ),
                       textAlign: TextAlign.center,
@@ -315,21 +315,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.all(12),
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withOpacity(0.1),
+                          color: context.appColors.error.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                              color: AppColors.error.withOpacity(0.3)),
+                              color: context.appColors.error.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline,
-                                color: AppColors.error),
+                            Icon(Icons.error_outline,
+                                color: context.appColors.error),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 _error!,
                                 style:
-                                    const TextStyle(color: AppColors.error),
+                                    TextStyle(color: context.appColors.error),
                               ),
                             ),
                           ],
@@ -412,7 +412,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ? 'Уже есть аккаунт?'
                               : 'Нет аккаунта?',
                           style:
-                              const TextStyle(color: AppColors.textSecondary),
+                              TextStyle(color: context.appColors.textSecondary),
                         ),
                         TextButton(
                           onPressed: _loading
@@ -618,21 +618,21 @@ class _LoginScreenState extends State<LoginScreen> {
           onTap: _loading ? null : _pickAvatar,
           child: CircleAvatar(
             radius: 40,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundColor: context.appColors.primary.withValues(alpha: 0.1),
             backgroundImage:
                 _avatarBytes != null ? MemoryImage(_avatarBytes!) : null,
             child: _avatarBytes == null
-                ? const Icon(Icons.camera_alt_outlined,
-                    size: 32, color: AppColors.primary)
+                ? Icon(Icons.camera_alt_outlined,
+                    size: 32, color: context.appColors.primary)
                 : null,
           ),
         ),
       ),
       const SizedBox(height: 8),
-      const Center(
+      Center(
         child: Text(
           'Добавить фото (необязательно)',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          style: TextStyle(color: context.appColors.textSecondary, fontSize: 13),
         ),
       ),
     ];

@@ -121,7 +121,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.notifications_none,
-                          size: 64, color: AppColors.textMuted),
+                          size: 64, color: context.appColors.textMuted),
                       const SizedBox(height: 16),
                       const Text(
                         'Нет уведомлений',
@@ -131,9 +131,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         'Здесь будут появляться ваши уведомления',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(color: context.appColors.textSecondary),
                       ),
                     ],
                   ),
@@ -163,7 +163,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       final n = _notifications[i];
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
-                        color: n.read ? null : AppColors.primary.withOpacity(0.05),
+                        color: n.read ? null : context.appColors.primary.withValues(alpha: 0.05),
                         child: InkWell(
                           onTap: () {
                             if (!n.read) _markRead(n.id);
@@ -181,8 +181,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: n.read
-                                        ? AppColors.border
-                                        : AppColors.primary,
+                                        ? context.appColors.border
+                                        : context.appColors.primary,
                                   ),
                                 ),
                                 Expanded(
@@ -206,9 +206,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                           ),
                                           Text(
                                             _formatTime(n.createdAt),
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 12,
-                                              color: AppColors.textMuted,
+                                              color: context.appColors.textMuted,
                                             ),
                                           ),
                                         ],
@@ -218,8 +218,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                         n.body,
                                         style: TextStyle(
                                           color: n.read
-                                              ? AppColors.textSecondary
-                                              : AppColors.textPrimary,
+                                              ? context.appColors.textSecondary
+                                              : context.appColors.textPrimary,
                                           fontSize: 14,
                                         ),
                                       ),

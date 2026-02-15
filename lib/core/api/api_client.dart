@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiClient {
   static const defaultBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://estate-hub.ru/api',
+    defaultValue: 'https://api.estate-hub.ru/api',
   );
 
   ApiClient({String baseUrl = defaultBaseUrl}) : _baseUrl = baseUrl;

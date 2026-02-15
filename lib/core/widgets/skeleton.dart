@@ -29,6 +29,10 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final highlightColor = isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -37,11 +41,7 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
             return LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: const [
-                Color(0xFFE2E8F0),
-                Color(0xFFF1F5F9),
-                Color(0xFFE2E8F0),
-              ],
+              colors: [baseColor, highlightColor, baseColor],
               stops: [
                 _controller.value - 0.3,
                 _controller.value,
@@ -73,11 +73,12 @@ class SkeletonBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFFE2E8F0),
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
         borderRadius: BorderRadius.circular(borderRadius),
       ),
     );
@@ -116,7 +117,7 @@ class _SkeletonCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111827) : Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
       clipBehavior: Clip.antiAlias,
@@ -298,7 +299,13 @@ class SkeletonMessages extends StatelessWidget {
                 height: 36 + (i % 3) * 8.0,
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: isMine ? const Color(0xFFBFDBFE) : const Color(0xFFE2E8F0),
+                  color: isMine
+                      ? (Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF1E3A5F)
+                          : const Color(0xFFBFDBFE))
+                      : (Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF1E293B)
+                          : const Color(0xFFE2E8F0)),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
                     topRight: const Radius.circular(16),
@@ -331,7 +338,7 @@ class SkeletonFavoritesList extends StatelessWidget {
         itemBuilder: (_, __) => Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111827) : Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
           clipBehavior: Clip.antiAlias,
@@ -379,7 +386,7 @@ class SkeletonMyListings extends StatelessWidget {
         itemBuilder: (_, __) => Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF111827) : Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
           clipBehavior: Clip.antiAlias,

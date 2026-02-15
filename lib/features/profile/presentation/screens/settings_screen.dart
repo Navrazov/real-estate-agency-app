@@ -6,6 +6,7 @@ import 'package:http_parser/http_parser.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/theme/theme_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -267,6 +268,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // --- Theme Section ---
+          _buildSectionTitle('Тема оформления'),
+          const SizedBox(height: 8),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    context.isDark ? Icons.dark_mode : Icons.light_mode,
+                    color: context.appColors.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      context.isDark ? 'Тёмная тема' : 'Светлая тема',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                  Switch(
+                    value: context.isDark,
+                    onChanged: (_) {
+                      ThemeServiceScope.of(context).toggleTheme();
+                    },
+                    activeThumbColor: context.appColors.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
           // --- Avatar Section ---
           _buildSectionTitle('Фото профиля'),
           const SizedBox(height: 8),
@@ -277,7 +310,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   CircleAvatar(
                     radius: 48,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    backgroundColor: context.appColors.primary.withValues(alpha: 0.1),
                     backgroundImage: user?.avatar != null
                         ? NetworkImage(user!.avatar!)
                         : null,
@@ -287,10 +320,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     .substring(0, 1)
                                     .toUpperCase() ??
                                 'U',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                              color: context.appColors.primary,
                             ),
                           )
                         : null,
@@ -341,10 +374,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
+        color: context.appColors.textPrimary,
       ),
     );
   }
@@ -359,8 +392,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.email_outlined,
-                    color: AppColors.textSecondary, size: 20),
+                Icon(Icons.email_outlined,
+                    color: context.appColors.textSecondary, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -373,18 +406,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.1),
+                      color: context.appColors.success.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.verified, color: AppColors.success, size: 16),
-                        SizedBox(width: 4),
+                        Icon(Icons.verified, color: context.appColors.success, size: 16),
+                        const SizedBox(width: 4),
                         Text(
                           'Подтвержден',
                           style:
-                              TextStyle(color: AppColors.success, fontSize: 12),
+                              TextStyle(color: context.appColors.success, fontSize: 12),
                         ),
                       ],
                     ),
@@ -402,9 +435,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Email не привязан',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: context.appColors.textSecondary),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
@@ -503,8 +536,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.phone_outlined,
-                  color: AppColors.textSecondary, size: 20),
+              Icon(Icons.phone_outlined,
+                  color: context.appColors.textSecondary, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -529,7 +562,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         Text(
           'Текущий: ${user?.phone ?? "Не указан"}',
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          style: TextStyle(color: context.appColors.textSecondary, fontSize: 14),
         ),
         const SizedBox(height: 12),
         TextFormField(

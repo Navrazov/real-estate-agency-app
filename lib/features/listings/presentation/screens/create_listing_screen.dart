@@ -213,15 +213,15 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.error.withOpacity(0.1),
+                  color: context.appColors.error.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                  border: Border.all(color: context.appColors.error.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.error),
+                    Icon(Icons.error_outline, color: context.appColors.error),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.error))),
+                    Expanded(child: Text(_error!, style: TextStyle(color: context.appColors.error))),
                   ],
                 ),
               ),
@@ -229,7 +229,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             // Photos
             Text.rich(TextSpan(children: [
               const TextSpan(text: 'Фотографии', style: TextStyle(fontWeight: FontWeight.w600)),
-              TextSpan(text: ' *', style: TextStyle(color: AppColors.error)),
+              TextSpan(text: ' *', style: TextStyle(color: context.appColors.error)),
             ])),
             const SizedBox(height: 8),
             GestureDetector(
@@ -237,7 +237,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.border, width: 2),
+                  border: Border.all(color: context.appColors.border, width: 2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -245,21 +245,21 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                     Icon(
                       Icons.add_photo_alternate_outlined,
                       size: 48,
-                      color: _uploading ? AppColors.textMuted : AppColors.primary,
+                      color: _uploading ? context.appColors.textMuted : context.appColors.primary,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       _uploading ? 'Загрузка...' : 'Добавить фото',
                       style: TextStyle(
-                        color: _uploading ? AppColors.textMuted : AppColors.primary,
+                        color: _uploading ? context.appColors.textMuted : context.appColors.primary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Минимум 1 фото',
                       style: TextStyle(
-                        color: AppColors.textMuted,
+                        color: context.appColors.textMuted,
                         fontSize: 12,
                       ),
                     ),
@@ -296,8 +296,8 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                             child: Container(
                               width: 24,
                               height: 24,
-                              decoration: const BoxDecoration(
-                                color: AppColors.error,
+                              decoration: BoxDecoration(
+                                color: context.appColors.error,
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(Icons.close, size: 16, color: Colors.white),
@@ -340,7 +340,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                   label: Text('${type.icon} ${type.label}'),
                   selected: selected,
                   onSelected: (_) => setState(() => _propertyType = type),
-                  selectedColor: AppColors.primary.withOpacity(0.2),
+                  selectedColor: context.appColors.primary.withValues(alpha: 0.2),
                 );
               }).toList(),
             ),
@@ -359,7 +359,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                     label: Text('${type.icon} ${type.label}'),
                     selected: selected,
                     onSelected: (_) => setState(() => _apartmentType = type),
-                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    selectedColor: context.appColors.primary.withValues(alpha: 0.2),
                   );
                 }).toList(),
               ),
@@ -444,7 +444,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 padding: const EdgeInsets.only(top: 4, left: 16),
                 child: Text(
                   '${_formatNumber(digits)} ₽',
-                  style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 13, color: context.appColors.primary, fontWeight: FontWeight.w500),
                 ),
               );
             }),
@@ -467,10 +467,10 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: selected ? AppColors.primary : Colors.grey.shade300,
+                            color: selected ? context.appColors.primary : Colors.grey.shade300,
                             width: selected ? 2 : 1,
                           ),
-                          color: selected ? AppColors.primary.withAlpha(20) : Colors.white,
+                          color: selected ? context.appColors.primary.withAlpha(20) : context.appColors.surfaceWhite,
                         ),
                         child: Column(
                           children: [
@@ -480,7 +480,7 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                               type.label,
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: selected ? AppColors.primary : AppColors.textSecondary,
+                                color: selected ? context.appColors.primary : context.appColors.textSecondary,
                               ),
                             ),
                           ],
@@ -654,9 +654,9 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             // Map
             const Text('Местоположение на карте', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Нажмите на карту или перетащите маркер',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              style: TextStyle(color: context.appColors.textMuted, fontSize: 12),
             ),
             const SizedBox(height: 8),
             ClipRRect(
