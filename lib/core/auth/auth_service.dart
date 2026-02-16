@@ -55,7 +55,7 @@ class User {
   final SubscriptionInfo subscription;
 
   String get displayName => name ?? phone ?? 'Пользователь';
-  bool get isAdmin => role == 'admin';
+  bool get isAdmin => role == 'admin' || role == 'superadmin';
   bool get isPro => subscription.isPro;
 }
 
