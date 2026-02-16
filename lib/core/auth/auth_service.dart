@@ -40,6 +40,8 @@ class User {
     required this.id,
     required this.role,
     this.name,
+    this.firstName,
+    this.lastName,
     this.phone,
     this.avatar,
     this.favorites = const [],
@@ -49,14 +51,20 @@ class User {
   final String id;
   final String role;
   final String? name;
+  final String? firstName;
+  final String? lastName;
   final String? phone;
   final String? avatar;
   final List<String> favorites;
   final SubscriptionInfo subscription;
 
-  String get displayName => name ?? phone ?? 'Пользователь';
+  String get displayName => name ?? [firstName, lastName].where((s) => s != null && s.isNotEmpty).join(' ').nullIfEmpty ?? phone ?? 'Пользователь';
   bool get isAdmin => role == 'admin' || role == 'superadmin';
   bool get isPro => subscription.isPro;
+}
+
+extension _StringExt on String {
+  String? get nullIfEmpty => isEmpty ? null : this;
 }
 
 class AuthService extends ChangeNotifier {
@@ -104,6 +112,8 @@ class AuthService extends ChangeNotifier {
           id: data['id'] as String,
           role: data['role'] as String,
           name: data['name'] as String?,
+          firstName: data['firstName'] as String?,
+          lastName: data['lastName'] as String?,
           phone: data['phone'] as String?,
           avatar: data['avatar'] as String?,
           favorites: (data['favorites'] as List<dynamic>?)?.cast<String>() ?? [],
@@ -116,6 +126,11 @@ class AuthService extends ChangeNotifier {
     }
     _loading = false;
     notifyListeners();
+  }
+
+  /// Reload user data from the server.
+  Future<void> reloadUser() async {
+    await _loadUser();
   }
 
   /// Login with phone number and password.
@@ -133,10 +148,11 @@ class AuthService extends ChangeNotifier {
   /// Sends verification code to the given phone number.
   /// [method] can be 'call' (default) or 'telegram'.
   /// [checkExists] if true, server will check if phone is already registered.
-  Future<void> sendCode(String phone, {String method = 'call', bool checkExists = false}) async {
+  /// [mustExist] if true, server will check if phone is registered (for forgot password).
+  Future<void> sendCode(String phone, {String method = 'call', bool checkExists = false, bool mustExist = false}) async {
     await _api.post<Map<String, dynamic>>(
       '/auth/send-code',
-      {'phone': phone, 'method': method, 'checkExists': checkExists},
+      {'phone': phone, 'method': method, 'checkExists': checkExists, 'mustExist': mustExist},
       (d) => d as Map<String, dynamic>,
       withAuth: false,
     );
@@ -182,10 +198,11 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Send verification code for phone change (authenticated).
-  Future<void> sendPhoneChangeCode(String phone) async {
+  /// [method] can be 'call' (default) or 'telegram'.
+  Future<void> sendPhoneChangeCode(String phone, {String method = 'call'}) async {
     await _api.post<Map<String, dynamic>>(
       '/users/me/phone/send-code',
-      {'phone': phone},
+      {'phone': phone, 'method': method},
       (d) => d as Map<String, dynamic>,
     );
   }
@@ -200,6 +217,25 @@ class AuthService extends ChangeNotifier {
     await _loadUser();
   }
 
+  /// Change password (authenticated).
+  Future<void> changePassword(String oldPassword, String newPassword) async {
+    await _api.post<Map<String, dynamic>>(
+      '/users/me/change-password',
+      {'oldPassword': oldPassword, 'newPassword': newPassword},
+      (d) => d as Map<String, dynamic>,
+    );
+  }
+
+  /// Reset password via phone verification code (unauthenticated).
+  Future<void> resetPassword(String phone, String code, String newPassword) async {
+    await _api.post<Map<String, dynamic>>(
+      '/auth/reset-password',
+      {'phone': phone, 'code': code, 'newPassword': newPassword},
+      (d) => d as Map<String, dynamic>,
+      withAuth: false,
+    );
+  }
+
   Future<void> logout() async {
     await _api.setToken(null);
     _user = null;
@@ -212,6 +248,8 @@ class AuthService extends ChangeNotifier {
         id: _user!.id,
         role: _user!.role,
         name: _user!.name,
+        firstName: _user!.firstName,
+        lastName: _user!.lastName,
         phone: _user!.phone,
         avatar: _user!.avatar,
         favorites: favorites,
