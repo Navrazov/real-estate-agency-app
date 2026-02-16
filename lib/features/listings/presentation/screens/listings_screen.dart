@@ -26,6 +26,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
   _ViewMode _viewMode = _ViewMode.list;
   String? _selectedId;
   bool _showFilters = false;
+  String? _currentUserId;
 
   // Filters
   final _searchCtrl = TextEditingController();
@@ -50,6 +51,21 @@ class _ListingsScreenState extends State<ListingsScreen> {
     super.initState();
     _load();
     _loadFilterOptions();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = AuthServiceScope.of(context);
+    final userId = auth.user?.id;
+    if (_currentUserId != userId) {
+      _currentUserId = userId;
+      // Skip the very first call (initState already loads)
+      if (_response != null || _error != null) {
+        _page = 1;
+        _load();
+      }
+    }
   }
 
   Future<void> _loadFilterOptions() async {
@@ -707,7 +723,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Вы видите ${listings.length} из $totalActive. Оформите подписку, чтобы видеть все.',
+                      'Вы видите ${listings.length} из $totalActive. Полный каталог доступен пользователям с активным профессиональным тарифом.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
