@@ -9,6 +9,7 @@ class ListingsQuery {
   final PropertyType? propertyType;
   final ApartmentType? apartmentType;
   final PaymentType? paymentType;
+  final DealType? dealType;
   final String? developer;
   final String? complex;
   final ListingStatus? status;
@@ -32,6 +33,7 @@ class ListingsQuery {
     this.propertyType,
     this.apartmentType,
     this.paymentType,
+    this.dealType,
     this.developer,
     this.complex,
     this.status,
@@ -62,6 +64,9 @@ class ListingsQuery {
     }
     if (paymentType != null) {
       m['paymentType'] = paymentType.toString().split('.').last;
+    }
+    if (dealType != null) {
+      m['dealType'] = dealType!.apiValue;
     }
     if (developer != null && developer!.isNotEmpty) m['developer'] = developer!;
     if (complex != null && complex!.isNotEmpty) m['complex'] = complex!;
@@ -120,6 +125,11 @@ class ListingsRepository {
     return list.map((e) => Listing.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  Future<int> getMyCount() async {
+    final list = await getMy();
+    return list.length;
+  }
+
   Future<Listing> getById(String id) async {
     final data = await _api.get<Map<String, dynamic>>(
       '/listings/$id',
@@ -133,6 +143,7 @@ class ListingsRepository {
     required String description,
     required double price,
     PaymentType? paymentType,
+    DealType? dealType,
     int? installmentMonths,
     double? installmentMonthly,
     required String address,
@@ -147,6 +158,10 @@ class ListingsRepository {
     required List<String> images,
     double? lat,
     double? lng,
+    String? dduNumber,
+    String? dduDate,
+    double? assignmentOriginalPrice,
+    String? completionDate,
   }) async {
     final body = <String, dynamic>{
       'title': title,
@@ -158,8 +173,15 @@ class ListingsRepository {
     if (paymentType != null) {
       body['paymentType'] = paymentType.toString().split('.').last;
     }
+    if (dealType != null) {
+      body['dealType'] = dealType.apiValue;
+    }
     if (installmentMonths != null) body['installmentMonths'] = installmentMonths;
     if (installmentMonthly != null) body['installmentMonthly'] = installmentMonthly;
+    if (dduNumber != null && dduNumber.isNotEmpty) body['dduNumber'] = dduNumber;
+    if (dduDate != null && dduDate.isNotEmpty) body['dduDate'] = dduDate;
+    if (assignmentOriginalPrice != null) body['assignmentOriginalPrice'] = assignmentOriginalPrice;
+    if (completionDate != null && completionDate.isNotEmpty) body['completionDate'] = completionDate;
     if (propertyType != null) {
       body['propertyType'] = propertyType.apiValue;
     }
@@ -188,6 +210,7 @@ class ListingsRepository {
     String? description,
     double? price,
     PaymentType? paymentType,
+    DealType? dealType,
     int? installmentMonths,
     double? installmentMonthly,
     String? address,
@@ -203,6 +226,10 @@ class ListingsRepository {
     List<String>? images,
     double? lat,
     double? lng,
+    String? dduNumber,
+    String? dduDate,
+    double? assignmentOriginalPrice,
+    String? completionDate,
   }) async {
     final body = <String, dynamic>{};
     if (title != null) body['title'] = title;
@@ -211,8 +238,15 @@ class ListingsRepository {
     if (paymentType != null) {
       body['paymentType'] = paymentType.toString().split('.').last;
     }
+    if (dealType != null) {
+      body['dealType'] = dealType.apiValue;
+    }
     if (installmentMonths != null) body['installmentMonths'] = installmentMonths;
     if (installmentMonthly != null) body['installmentMonthly'] = installmentMonthly;
+    if (dduNumber != null) body['dduNumber'] = dduNumber;
+    if (dduDate != null) body['dduDate'] = dduDate;
+    if (assignmentOriginalPrice != null) body['assignmentOriginalPrice'] = assignmentOriginalPrice;
+    if (completionDate != null) body['completionDate'] = completionDate;
     if (address != null) body['address'] = address;
     if (propertyType != null) {
       body['propertyType'] = propertyType.apiValue;

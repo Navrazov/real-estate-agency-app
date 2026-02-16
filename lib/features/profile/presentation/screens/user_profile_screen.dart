@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_theme.dart';
@@ -411,10 +412,14 @@ class _ListingCard extends StatelessWidget {
                 width: 120,
                 height: 100,
                 child: listing.images.isNotEmpty
-                    ? Image.network(
-                        listing.images.first,
+                    ? CachedNetworkImage(
+                        imageUrl: listing.images.first,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        placeholder: (_, __) => Container(
+                          color: context.appColors.surface,
+                          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
                           color: context.appColors.surface,
                           child: Center(
                             child: Icon(Icons.home_outlined,

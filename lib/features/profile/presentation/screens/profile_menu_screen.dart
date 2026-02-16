@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/theme/theme_service.dart';
+import '../../../../core/widgets/upgrade_prompt.dart';
 
 class ProfileMenuScreen extends StatelessWidget {
   const ProfileMenuScreen({super.key});
@@ -82,7 +83,67 @@ class ProfileMenuScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+
+          // Subscription status
+          if (user != null)
+            GestureDetector(
+              onTap: user.isPro
+                  ? null
+                  : () => showUpgradePrompt(context),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: user.isPro
+                      ? colors.accent.withValues(alpha: 0.1)
+                      : colors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: user.isPro
+                        ? colors.accent.withValues(alpha: 0.3)
+                        : colors.border,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      user.isPro ? Icons.workspace_premium : Icons.star_outline,
+                      color: user.isPro ? colors.accent : colors.textMuted,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.isPro ? 'Тариф Про' : 'Бесплатный тариф',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              color: user.isPro ? colors.accent : colors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            user.isPro
+                                ? 'Все функции доступны'
+                                : 'Перейти на Про на сайте',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!user.isPro)
+                      Icon(Icons.chevron_right, color: colors.textMuted),
+                  ],
+                ),
+              ),
+            ),
+          const SizedBox(height: 16),
 
           // Theme toggle
           Container(

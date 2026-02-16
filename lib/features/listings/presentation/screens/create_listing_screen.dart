@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
+import '../../../../core/auth/auth_service.dart';
 import '../../../../core/widgets/location_picker_map.dart';
 import '../../../../core/widgets/address_picker.dart';
+import '../../../../core/widgets/upgrade_prompt.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
 
@@ -56,11 +58,15 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   final _installmentMonthlyCtrl = TextEditingController();
   final _developerCtrl = TextEditingController();
   final _complexCtrl = TextEditingController();
+  final _dduNumberCtrl = TextEditingController();
+  final _assignmentOriginalPriceCtrl = TextEditingController();
+  final _completionDateCtrl = TextEditingController();
   final _picker = ImagePicker();
 
   PropertyType _propertyType = PropertyType.apartment;
   ApartmentType? _apartmentType;
   PaymentType _paymentType = PaymentType.cash;
+  DealType _dealType = DealType.sale;
   final List<String> _imageUrls = [];
   String _city = '';
   String _address = '';
@@ -85,6 +91,9 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     _installmentMonthlyCtrl.dispose();
     _developerCtrl.dispose();
     _complexCtrl.dispose();
+    _dduNumberCtrl.dispose();
+    _assignmentOriginalPriceCtrl.dispose();
+    _completionDateCtrl.dispose();
     super.dispose();
   }
 
@@ -113,6 +122,17 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Check subscription listing limit
+    final auth = AuthServiceScope.of(context);
+    final sub = auth.user?.subscription;
+    if (sub != null && sub.isFree) {
+      final myCount = await _repo.getMyCount();
+      if (myCount >= sub.maxListings) {
+        if (mounted) showUpgradePrompt(context, feature: 'Безлимит объявлений');
+        return;
+      }
+    }
 
     if (_imageUrls.isEmpty) {
       setState(() => _error = 'Добавьте хотя бы одну фотографию');
@@ -345,6 +365,107 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 );
               }).toList(),
             ),
+            const SizedBox(height: 24),
+
+            // Deal Type
+            const Text('Тип сделки', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Row(
+              children: DealType.values.map((type) {
+                final selected = _dealType == type;
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(right: type == DealType.sale ? 8 : 0, left: type == DealType.assignment ? 8 : 0),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _dealType = type),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: selected ? context.appColors.primary : context.appColors.border,
+                            width: selected ? 2 : 1,
+                          ),
+                          color: selected ? context.appColors.primary.withAlpha(20) : context.appColors.surfaceWhite,
+                        ),
+                        child: Column(
+                          children: [
+                            Text(type.icon, style: const TextStyle(fontSize: 24)),
+                            const SizedBox(height: 4),
+                            Text(
+                              type.label,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: selected ? context.appColors.primary : context.appColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+
+            // Assignment Details
+            if (_dealType == DealType.assignment) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.appColors.accent.withValues(alpha: 0.1),
+                  border: Border.all(color: context.appColors.accent.withValues(alpha: 0.3)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 18, color: context.appColors.accent),
+                        const SizedBox(width: 8),
+                        Text('Данные переуступки', style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.accent)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _dduNumberCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Номер ДДУ',
+                        prefixIcon: Icon(Icons.description_outlined),
+                      ),
+                      enabled: !_loading,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _assignmentOriginalPriceCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Цена по ДДУ, ₽',
+                        prefixIcon: Icon(Icons.attach_money),
+                        hintText: '3 000 000',
+                        suffixText: '₽',
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [_PriceInputFormatter()],
+                      enabled: !_loading,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _completionDateCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Дата сдачи объекта',
+                        hintText: '2025-12',
+                        prefixIcon: Icon(Icons.calendar_today_outlined),
+                      ),
+                      enabled: !_loading,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             const SizedBox(height: 24),
 
             // Apartment Type (only for apartments)

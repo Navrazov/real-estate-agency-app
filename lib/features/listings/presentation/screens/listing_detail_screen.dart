@@ -1,9 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/widgets/listings_map.dart';
 import '../../../../core/widgets/skeleton.dart';
+import '../../../../core/widgets/upgrade_prompt.dart';
 import '../../../chat/data/chat_repository.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
@@ -181,6 +184,24 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                               ),
                               onPressed: _toggleFavorite,
                             ),
+                            IconButton(
+                              icon: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(Icons.share_outlined, color: context.appColors.textPrimary),
+                              ),
+                              onPressed: () {
+                                if (_listing != null) {
+                                  Share.share(
+                                    '${_listing!.title} — ${_formatPrice(_listing!.price)}\n${_listing!.address}',
+                                    subject: _listing!.title,
+                                  );
+                                }
+                              },
+                            ),
                             if (canEdit) ...[
                               IconButton(
                                 icon: Container(
@@ -215,10 +236,14 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                     ? PageView.builder(
                                         itemCount: images.length,
                                         onPageChanged: (i) => setState(() => _imageIndex = i),
-                                        itemBuilder: (context, i) => Image.network(
-                                          images[i],
+                                        itemBuilder: (context, i) => CachedNetworkImage(
+                                          imageUrl: images[i],
                                           fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => Container(
+                                          placeholder: (_, __) => Container(
+                                            color: context.appColors.surface,
+                                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                          ),
+                                          errorWidget: (_, __, ___) => Container(
                                             color: context.appColors.surface,
                                             child: const Center(
                                               child: Text('🏠', style: TextStyle(fontSize: 64)),
@@ -304,6 +329,11 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                               ? context.appColors.error
                                               : context.appColors.accent,
                                     ),
+                                    if (_listing!.dealType == DealType.assignment)
+                                      _Badge(
+                                        text: 'Переуступка',
+                                        color: context.appColors.accent,
+                                      ),
                                   ],
                                 ),
                                 const SizedBox(height: 16),
@@ -393,6 +423,46 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                   ),
                                 ],
                                 const SizedBox(height: 12),
+
+                                // Assignment info
+                                if (_listing!.dealType == DealType.assignment) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: context.appColors.primary.withValues(alpha: 0.05),
+                                      border: Border.all(color: context.appColors.primary.withValues(alpha: 0.2)),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Text('📄', style: TextStyle(fontSize: 16)),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              'Переуступка (цессия)',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                color: context.appColors.primary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        if (_listing!.dduNumber != null && _listing!.dduNumber!.isNotEmpty)
+                                          _InfoRow(label: 'Номер ДДУ', value: _listing!.dduNumber!),
+                                        if (_listing!.dduDate != null && _listing!.dduDate!.isNotEmpty)
+                                          _InfoRow(label: 'Дата ДДУ', value: _listing!.dduDate!),
+                                        if (_listing!.assignmentOriginalPrice != null)
+                                          _InfoRow(label: 'Цена по ДДУ', value: _formatPrice(_listing!.assignmentOriginalPrice!)),
+                                        if (_listing!.completionDate != null && _listing!.completionDate!.isNotEmpty)
+                                          _InfoRow(label: 'Дата сдачи', value: _listing!.completionDate!),
+                                      ],
+                                    ),
+                                  ),
+                                ],
 
                                 // Address
                                 Row(
@@ -559,23 +629,47 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                                   ),
                                                 ),
                                                 if (_listing!.authorPhone != null)
-                                                  Text(
-                                                    _listing!.authorPhone!,
-                                                    style: TextStyle(
-                                                      color: context.appColors.primary,
-                                                      fontSize: 14,
-                                                    ),
-                                                  ),
+                                                  auth.user?.subscription.canSeePhones == true
+                                                      ? Text(
+                                                          _listing!.authorPhone!,
+                                                          style: TextStyle(
+                                                            color: context.appColors.primary,
+                                                            fontSize: 14,
+                                                          ),
+                                                        )
+                                                      : GestureDetector(
+                                                          onTap: () => showUpgradePrompt(context, feature: 'Просмотр телефонов'),
+                                                          child: Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              Icon(Icons.lock_outline, size: 14, color: context.appColors.accent),
+                                                              const SizedBox(width: 4),
+                                                              Text(
+                                                                'Показать телефон',
+                                                                style: TextStyle(
+                                                                  color: context.appColors.accent,
+                                                                  fontSize: 14,
+                                                                  fontWeight: FontWeight.w500,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
                                               ],
                                             ),
                                           ),
                                           if (_listing!.authorPhone != null)
-                                            IconButton.filled(
-                                              onPressed: () {
-                                                // Could launch phone call
-                                              },
-                                              icon: const Icon(Icons.phone),
-                                            ),
+                                            auth.user?.subscription.canSeePhones == true
+                                                ? IconButton.filled(
+                                                    onPressed: () {
+                                                      // Could launch phone call
+                                                    },
+                                                    icon: const Icon(Icons.phone),
+                                                  )
+                                                : IconButton(
+                                                    onPressed: () => showUpgradePrompt(context, feature: 'Просмотр телефонов'),
+                                                    icon: Icon(Icons.lock_outline, color: context.appColors.textMuted),
+                                                  ),
                                         ],
                                       ),
                                     ),
@@ -725,6 +819,44 @@ class _FeatureItem extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: context.appColors.textSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

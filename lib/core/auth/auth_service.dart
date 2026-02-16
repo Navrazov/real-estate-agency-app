@@ -1,6 +1,40 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 
+class SubscriptionInfo {
+  const SubscriptionInfo({
+    this.plan = 'free',
+    this.maxListings = 3,
+    this.maxConversations = 5,
+    this.canSeePhones = false,
+    this.priorityPlacement = false,
+    this.advancedStats = false,
+  });
+
+  final String plan;
+  final int maxListings;
+  final int maxConversations;
+  final bool canSeePhones;
+  final bool priorityPlacement;
+  final bool advancedStats;
+
+  bool get isPro => plan == 'pro';
+  bool get isFree => plan != 'pro';
+
+  factory SubscriptionInfo.fromJson(Map<String, dynamic> json) {
+    final limits = json['limits'] as Map<String, dynamic>? ?? {};
+    final maxListings = limits['maxListings'];
+    return SubscriptionInfo(
+      plan: json['plan'] as String? ?? 'free',
+      maxListings: maxListings is num && maxListings.isFinite ? maxListings.toInt() : 999999,
+      maxConversations: (limits['maxConversations'] as num?)?.toInt() ?? 5,
+      canSeePhones: limits['canSeePhones'] as bool? ?? false,
+      priorityPlacement: limits['priorityPlacement'] as bool? ?? false,
+      advancedStats: limits['advancedStats'] as bool? ?? false,
+    );
+  }
+}
+
 class User {
   User({
     required this.id,
@@ -11,6 +45,7 @@ class User {
     this.avatar,
     this.favorites = const [],
     this.emailVerified = false,
+    this.subscription = const SubscriptionInfo(),
   });
 
   final String id;
@@ -21,9 +56,11 @@ class User {
   final String? avatar;
   final List<String> favorites;
   final bool emailVerified;
+  final SubscriptionInfo subscription;
 
   String get displayName => name ?? email?.split('@').first ?? phone ?? 'Пользователь';
   bool get isAdmin => role == 'admin';
+  bool get isPro => subscription.isPro;
 }
 
 class AuthService extends ChangeNotifier {
@@ -56,6 +93,17 @@ class AuthService extends ChangeNotifier {
         await _api.setToken(null);
         _user = null;
       } else {
+        // Load subscription info in parallel
+        SubscriptionInfo sub = const SubscriptionInfo();
+        try {
+          final subData = await _api.get<Map<String, dynamic>>(
+            '/subscriptions/me',
+            (d) => d as Map<String, dynamic>,
+          );
+          sub = SubscriptionInfo.fromJson(subData);
+        } catch (_) {
+          // Default to free plan on error
+        }
         _user = User(
           id: data['id'] as String,
           email: data['email'] as String?,
@@ -65,6 +113,7 @@ class AuthService extends ChangeNotifier {
           avatar: data['avatar'] as String?,
           favorites: (data['favorites'] as List<dynamic>?)?.cast<String>() ?? [],
           emailVerified: data['emailVerified'] as bool? ?? false,
+          subscription: sub,
         );
       }
     } catch (_) {
@@ -195,6 +244,7 @@ class AuthService extends ChangeNotifier {
         avatar: _user!.avatar,
         favorites: favorites,
         emailVerified: _user!.emailVerified,
+        subscription: _user!.subscription,
       );
       notifyListeners();
     }

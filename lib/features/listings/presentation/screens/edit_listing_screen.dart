@@ -67,11 +67,15 @@ class _EditListingScreenState extends State<EditListingScreen> {
   final _installmentMonthlyController = TextEditingController();
   final _developerController = TextEditingController();
   final _complexController = TextEditingController();
+  final _dduNumberController = TextEditingController();
+  final _assignmentOriginalPriceController = TextEditingController();
+  final _completionDateController = TextEditingController();
 
   PropertyType _propertyType = PropertyType.apartment;
   ApartmentType? _apartmentType;
   ListingStatus _status = ListingStatus.active;
   PaymentType _paymentType = PaymentType.cash;
+  DealType _dealType = DealType.sale;
   List<String> _images = [];
   String _city = '';
   String _address = '';
@@ -99,6 +103,9 @@ class _EditListingScreenState extends State<EditListingScreen> {
     _installmentMonthlyController.dispose();
     _developerController.dispose();
     _complexController.dispose();
+    _dduNumberController.dispose();
+    _assignmentOriginalPriceController.dispose();
+    _completionDateController.dispose();
     super.dispose();
   }
 
@@ -133,6 +140,10 @@ class _EditListingScreenState extends State<EditListingScreen> {
         _apartmentType = listing.apartmentType;
         _developerController.text = listing.developer ?? '';
         _complexController.text = listing.complex ?? '';
+        _dealType = listing.dealType;
+        _dduNumberController.text = listing.dduNumber ?? '';
+        _assignmentOriginalPriceController.text = listing.assignmentOriginalPrice != null ? _formatNumber(listing.assignmentOriginalPrice!.toStringAsFixed(0)) : '';
+        _completionDateController.text = listing.completionDate ?? '';
         _lat = listing.lat;
         _lng = listing.lng;
         _loading = false;
@@ -222,6 +233,10 @@ class _EditListingScreenState extends State<EditListingScreen> {
         images: _images,
         lat: _lat,
         lng: _lng,
+        dealType: _dealType,
+        dduNumber: _dealType == DealType.assignment ? _dduNumberController.text.trim() : null,
+        assignmentOriginalPrice: _dealType == DealType.assignment ? double.tryParse(_assignmentOriginalPriceController.text.replaceAll(RegExp(r'[^\d]'), '')) : null,
+        completionDate: _dealType == DealType.assignment ? _completionDateController.text.trim() : null,
       );
       if (mounted) {
         context.pop();
@@ -393,6 +408,96 @@ class _EditListingScreenState extends State<EditListingScreen> {
                 );
               }).toList(),
             ),
+            const SizedBox(height: 24),
+
+            // Deal Type
+            const Text('Тип сделки', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Row(
+              children: DealType.values.map((type) {
+                final selected = _dealType == type;
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      right: type == DealType.sale ? 8 : 0,
+                      left: type == DealType.assignment ? 8 : 0,
+                    ),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _dealType = type),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: selected ? context.appColors.primary : context.appColors.border,
+                            width: selected ? 2 : 1,
+                          ),
+                          color: selected ? context.appColors.primary.withAlpha(20) : context.appColors.surfaceWhite,
+                        ),
+                        child: Column(
+                          children: [
+                            Text(type.icon, style: const TextStyle(fontSize: 24)),
+                            const SizedBox(height: 4),
+                            Text(type.label, style: TextStyle(fontWeight: FontWeight.w600, color: selected ? context.appColors.primary : context.appColors.textSecondary)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+
+            // Assignment Details
+            if (_dealType == DealType.assignment) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.appColors.accent.withValues(alpha: 0.1),
+                  border: Border.all(color: context.appColors.accent.withValues(alpha: 0.3)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 18, color: context.appColors.accent),
+                        const SizedBox(width: 8),
+                        Text('Данные переуступки', style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.accent)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _dduNumberController,
+                      decoration: const InputDecoration(labelText: 'Номер ДДУ'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _assignmentOriginalPriceController,
+                      decoration: const InputDecoration(
+                        labelText: 'Цена по ДДУ, ₽',
+                        prefixIcon: Icon(Icons.attach_money),
+                        suffixText: '₽',
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [_PriceInputFormatter()],
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _completionDateController,
+                      decoration: const InputDecoration(
+                        labelText: 'Дата сдачи объекта',
+                        hintText: '2025-12',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             const SizedBox(height: 24),
 
             // Apartment Type (only for apartments)

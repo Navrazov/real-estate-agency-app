@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
@@ -742,11 +743,20 @@ class _ListingsScreenState extends State<ListingsScreen> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: l.images.isNotEmpty
-                                  ? Image.network(
-                                      l.images.first,
+                                  ? CachedNetworkImage(
+                                      imageUrl: l.images.first,
                                       width: 60,
                                       height: 60,
                                       fit: BoxFit.cover,
+                                      placeholder: (_, __) => Container(
+                                        width: 60, height: 60,
+                                        color: context.appColors.surface,
+                                      ),
+                                      errorWidget: (_, __, ___) => Container(
+                                        width: 60, height: 60,
+                                        color: context.appColors.surface,
+                                        child: const Center(child: Text('🏠')),
+                                      ),
                                     )
                                   : Container(
                                       width: 60,
@@ -917,10 +927,14 @@ class _CompactListingCard extends StatelessWidget {
                 AspectRatio(
                   aspectRatio: 4 / 3,
                   child: listing.images.isNotEmpty
-                      ? Image.network(
-                          listing.images.first,
+                      ? CachedNetworkImage(
+                          imageUrl: listing.images.first,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          placeholder: (_, __) => Container(
+                            color: context.appColors.surface,
+                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          ),
+                          errorWidget: (_, __, ___) => Container(
                             color: context.appColors.surface,
                             child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
                           ),

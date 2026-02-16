@@ -8,6 +8,8 @@ enum ModerationStatus { pending, approved, rejected }
 
 enum PaymentType { cash, installment }
 
+enum DealType { sale, assignment }
+
 extension PropertyTypeExtension on PropertyType {
   String get label {
     switch (this) {
@@ -117,6 +119,35 @@ extension PaymentTypeExtension on PaymentType {
   }
 }
 
+extension DealTypeExtension on DealType {
+  String get label {
+    switch (this) {
+      case DealType.sale:
+        return 'Продажа';
+      case DealType.assignment:
+        return 'Переуступка';
+    }
+  }
+
+  String get icon {
+    switch (this) {
+      case DealType.sale:
+        return '🏠';
+      case DealType.assignment:
+        return '📄';
+    }
+  }
+
+  String get apiValue {
+    switch (this) {
+      case DealType.sale:
+        return 'sale';
+      case DealType.assignment:
+        return 'assignment';
+    }
+  }
+}
+
 class Listing {
   Listing({
     required this.id,
@@ -124,6 +155,7 @@ class Listing {
     required this.description,
     required this.price,
     this.paymentType = PaymentType.cash,
+    this.dealType = DealType.sale,
     this.installmentMonths,
     this.installmentMonthly,
     required this.address,
@@ -146,6 +178,10 @@ class Listing {
     this.isFavorite = false,
     this.lat,
     this.lng,
+    this.dduNumber,
+    this.dduDate,
+    this.assignmentOriginalPrice,
+    this.completionDate,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -155,6 +191,7 @@ class Listing {
   final String description;
   final double price;
   final PaymentType paymentType;
+  final DealType dealType;
   final int? installmentMonths;
   final double? installmentMonthly;
   final String address;
@@ -177,6 +214,10 @@ class Listing {
   final bool isFavorite;
   final double? lat;
   final double? lng;
+  final String? dduNumber;
+  final String? dduDate;
+  final double? assignmentOriginalPrice;
+  final String? completionDate;
   final String createdAt;
   final String updatedAt;
 
@@ -187,6 +228,7 @@ class Listing {
       description: json['description'] as String,
       price: (json['price'] as num).toDouble(),
       paymentType: _parsePaymentType(json['paymentType'] as String?),
+      dealType: _parseDealType(json['dealType'] as String?),
       installmentMonths: json['installmentMonths'] as int?,
       installmentMonthly: (json['installmentMonthly'] as num?)?.toDouble(),
       address: json['address'] as String,
@@ -209,6 +251,10 @@ class Listing {
       isFavorite: json['isFavorite'] as bool? ?? false,
       lat: (json['lat'] as num?)?.toDouble(),
       lng: (json['lng'] as num?)?.toDouble(),
+      dduNumber: json['dduNumber'] as String?,
+      dduDate: json['dduDate'] as String?,
+      assignmentOriginalPrice: (json['assignmentOriginalPrice'] as num?)?.toDouble(),
+      completionDate: json['completionDate'] as String?,
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
     );
@@ -244,6 +290,15 @@ class Listing {
         return PaymentType.installment;
       default:
         return PaymentType.cash;
+    }
+  }
+
+  static DealType _parseDealType(String? value) {
+    switch (value) {
+      case 'assignment':
+        return DealType.assignment;
+      default:
+        return DealType.sale;
     }
   }
 
@@ -292,6 +347,7 @@ class Listing {
       description: description,
       price: price,
       paymentType: paymentType,
+      dealType: dealType,
       installmentMonths: installmentMonths,
       installmentMonthly: installmentMonthly,
       address: address,
@@ -314,6 +370,10 @@ class Listing {
       isFavorite: isFavorite ?? this.isFavorite,
       lat: lat,
       lng: lng,
+      dduNumber: dduNumber,
+      dduDate: dduDate,
+      assignmentOriginalPrice: assignmentOriginalPrice,
+      completionDate: completionDate,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
