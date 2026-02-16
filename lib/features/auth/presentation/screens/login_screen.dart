@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -78,14 +79,20 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _sendingCode = false;
   int _regStep = 1; // 1 = phone verification, 2 = personal info
   String? _error;
+  String? _codeMethod; // 'call' or 'telegram'
+  int _cooldown = 0;
+  Timer? _cooldownTimer;
   Uint8List? _avatarBytes;
   String? _avatarFileName;
 
   final _picker = ImagePicker();
   final _apiClient = ApiClient();
 
+  static const _cooldownSeconds = 60;
+
   @override
   void dispose() {
+    _cooldownTimer?.cancel();
     _identifierCtrl.dispose();
     _passCtrl.dispose();
     _phoneCtrl.dispose();
@@ -103,7 +110,24 @@ class _LoginScreenState extends State<LoginScreen> {
     return '+7$digits';
   }
 
-  Future<void> _sendCode() async {
+  void _startCooldown() {
+    _cooldownTimer?.cancel();
+    setState(() => _cooldown = _cooldownSeconds);
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _cooldown--;
+        if (_cooldown <= 0) {
+          timer.cancel();
+        }
+      });
+    });
+  }
+
+  Future<void> _sendCode(String method) async {
     final phone = _rawPhone();
     if (phone.length < 12) {
       setState(() => _error = 'Введите корректный номер телефона');
@@ -117,12 +141,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final auth = AuthServiceScope.of(context);
-      await auth.sendCode(phone);
+      await auth.sendCode(phone, method: method);
       if (mounted) {
         setState(() {
           _codeSent = true;
           _sendingCode = false;
+          _codeMethod = method;
         });
+        _startCooldown();
       }
     } catch (e) {
       if (mounted) {
@@ -422,6 +448,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     _error = null;
                                     _codeSent = false;
                                     _regStep = 1;
+                                    _codeMethod = null;
+                                    _cooldown = 0;
+                                    _cooldownTimer?.cancel();
                                   }),
                           child: Text(
                               _isRegister ? 'Войти' : 'Регистрация'),
@@ -488,6 +517,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   /// Step 1: Phone number + verification code
   List<Widget> _buildRegisterStep1() {
+    final cooldownDisabled = _cooldown > 0 || _sendingCode;
+
     return [
       // Phone
       TextFormField(
@@ -499,7 +530,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         keyboardType: TextInputType.phone,
         inputFormatters: [_PhoneInputFormatter()],
-        enabled: !_loading && !_sendingCode,
+        enabled: !_loading && !_sendingCode && !_codeSent,
         validator: (v) {
           if (v == null || v.isEmpty) return 'Введите телефон';
           final digits = v.replaceAll(RegExp(r'[^\d]'), '');
@@ -509,30 +540,134 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       const SizedBox(height: 12),
 
-      // Send code button
-      SizedBox(
-        width: double.infinity,
-        child: OutlinedButton(
-          onPressed: (_loading || _sendingCode) ? null : _sendCode,
-          child: _sendingCode
-              ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(_codeSent ? 'Отправить повторно' : 'Получить код'),
+      if (!_codeSent) ...[
+        // Choose verification method
+        Text(
+          'Выберите способ получения кода',
+          style: TextStyle(
+            color: context.appColors.textSecondary,
+            fontSize: 13,
+          ),
+          textAlign: TextAlign.center,
         ),
-      ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            // Call button
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: cooldownDisabled ? null : () => _sendCode('call'),
+                icon: _sendingCode
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.phone, size: 18),
+                label: const Text('Звонок'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(0, 48),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Telegram button
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: cooldownDisabled ? null : () => _sendCode('telegram'),
+                icon: _sendingCode
+                    ? SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: context.appColors.primary,
+                        ),
+                      )
+                    : const Icon(Icons.telegram, size: 18),
+                label: const Text('Telegram'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, 48),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (_cooldown > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Повторный запрос через $_cooldown сек.',
+              style: TextStyle(
+                color: context.appColors.textSecondary,
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
 
       if (_codeSent) ...[
+        const SizedBox(height: 12),
+
+        // Hint about the verification method
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: context.appColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: context.appColors.primary.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                _codeMethod == 'call' ? Icons.phone_callback : Icons.telegram,
+                color: context.appColors.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _codeMethod == 'call'
+                          ? 'Вам поступит звонок'
+                          : 'Код отправлен в Telegram',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: context.appColors.primary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _codeMethod == 'call'
+                          ? 'Введите последние 4 цифры номера, с которого поступит звонок. Если вы примете вызов, код будет озвучен.'
+                          : 'Проверьте сообщения в Telegram и введите полученный 4-значный код.',
+                      style: TextStyle(
+                        color: context.appColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
+
         // Code input
         TextFormField(
           controller: _codeCtrl,
           decoration: const InputDecoration(
-            labelText: 'Код из СМС',
-            prefixIcon: Icon(Icons.sms_outlined),
-            hintText: '1234',
+            labelText: 'Код подтверждения',
+            prefixIcon: Icon(Icons.pin_outlined),
+            hintText: '0000',
           ),
           keyboardType: TextInputType.number,
           maxLength: 4,
@@ -544,6 +679,55 @@ class _LoginScreenState extends State<LoginScreen> {
             return null;
           },
         ),
+
+        const SizedBox(height: 8),
+
+        // Resend options
+        Text(
+          'Не получили код?',
+          style: TextStyle(
+            color: context.appColors.textSecondary,
+            fontSize: 12,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(
+              onPressed: cooldownDisabled ? null : () => _sendCode('call'),
+              style: TextButton.styleFrom(
+                textStyle: const TextStyle(fontSize: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: const Text('Позвонить снова'),
+            ),
+            Text(
+              '|',
+              style: TextStyle(
+                color: context.appColors.textSecondary.withValues(alpha: 0.5),
+              ),
+            ),
+            TextButton(
+              onPressed: cooldownDisabled ? null : () => _sendCode('telegram'),
+              style: TextButton.styleFrom(
+                textStyle: const TextStyle(fontSize: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: const Text('Отправить в Telegram'),
+            ),
+          ],
+        ),
+        if (_cooldown > 0)
+          Text(
+            'Повторный запрос через $_cooldown сек.',
+            style: TextStyle(
+              color: context.appColors.textSecondary,
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
+          ),
       ],
     ];
   }

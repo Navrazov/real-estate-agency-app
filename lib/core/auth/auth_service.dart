@@ -141,10 +141,11 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Sends verification code to the given phone number.
-  Future<void> sendCode(String phone) async {
+  /// [method] can be 'call' (default) or 'telegram'.
+  Future<void> sendCode(String phone, {String method = 'call'}) async {
     await _api.post<Map<String, dynamic>>(
       '/auth/send-code',
-      {'phone': phone},
+      {'phone': phone, 'method': method},
       (d) => d as Map<String, dynamic>,
       withAuth: false,
     );
