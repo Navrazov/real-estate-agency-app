@@ -45,10 +45,59 @@ class _PhoneInputFormatter extends TextInputFormatter {
     }
     if (digits.length > 10) digits = digits.substring(0, 10);
     final formatted = _formatPhoneDisplay(digits);
+    if (formatted.isEmpty) {
+      return const TextEditingValue(
+        text: '',
+        selection: TextSelection.collapsed(offset: 0),
+      );
+    }
+
+    // Track cursor: count subscriber digits before cursor in the raw new text
+    final cursorPos = newValue.selection.baseOffset.clamp(0, newValue.text.length);
+    int subDigitsBefore = _countSubscriberDigitsBefore(newValue.text, cursorPos);
+    subDigitsBefore = subDigitsBefore.clamp(0, digits.length);
+
+    // Find the corresponding position in the formatted string
+    final newCursorPos = _findCursorPosition(formatted, subDigitsBefore);
+
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
+      selection: TextSelection.collapsed(offset: newCursorPos),
     );
+  }
+
+  int _countSubscriberDigitsBefore(String text, int pos) {
+    int count = 0;
+    bool firstDigitSeen = false;
+    for (int i = 0; i < pos; i++) {
+      final c = text.codeUnitAt(i);
+      if (c >= 48 && c <= 57) {
+        if (!firstDigitSeen) {
+          firstDigitSeen = true;
+          if (text[i] == '7' || text[i] == '8') continue;
+        }
+        count++;
+      }
+    }
+    return count;
+  }
+
+  int _findCursorPosition(String formatted, int n) {
+    if (n <= 0) {
+      final idx = formatted.indexOf('(');
+      return idx >= 0 ? idx + 1 : formatted.length;
+    }
+    int count = 0;
+    bool prefixSkipped = false;
+    for (int i = 0; i < formatted.length; i++) {
+      final c = formatted.codeUnitAt(i);
+      if (c >= 48 && c <= 57) {
+        if (!prefixSkipped) { prefixSkipped = true; continue; }
+        count++;
+        if (count == n) return i + 1;
+      }
+    }
+    return formatted.length;
   }
 }
 
@@ -90,6 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _codeMethod; // 'call' or 'telegram'
   int _cooldown = 0;
   Timer? _cooldownTimer;
+  bool _phoneHidden = false;
   Uint8List? _avatarBytes;
   String? _avatarFileName;
 
@@ -372,6 +422,7 @@ class _LoginScreenState extends State<LoginScreen> {
           password: _regPassCtrl.text,
           firstName: _firstNameCtrl.text.trim(),
           lastName: _lastNameCtrl.text.trim(),
+          phoneHidden: _phoneHidden,
         );
         // Upload avatar after registration (now we have a token)
         try {
@@ -572,6 +623,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (_mode == 'register') {
       return [
+        // Phone hidden checkbox
+        CheckboxListTile(
+          value: _phoneHidden,
+          onChanged: (val) => setState(() => _phoneHidden = val ?? false),
+          title: const Text('Скрыть мой номер телефона', style: TextStyle(fontSize: 14)),
+          subtitle: Text(
+            'Другие пользователи не смогут видеть ваш номер',
+            style: TextStyle(fontSize: 12, color: context.appColors.textSecondary),
+          ),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+        ),
+        const SizedBox(height: 8),
         ElevatedButton(
           onPressed: _loading ? null : _submit,
           style: ElevatedButton.styleFrom(

@@ -14,6 +14,8 @@ import '../../features/profile/presentation/screens/user_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_menu_screen.dart';
 import '../../features/profile/presentation/screens/settings_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
+import '../../features/legal/presentation/screens/privacy_screen.dart';
+import '../../features/legal/presentation/screens/terms_screen.dart';
 import '../auth/auth_service.dart';
 
 class AppRouter {
@@ -22,7 +24,8 @@ class AppRouter {
   static GoRouter router(AuthService auth) {
     return GoRouter(
       navigatorKey: _rootKey,
-      initialLocation: '/login',
+      initialLocation: '/',
+      refreshListenable: auth,
       redirect: (context, state) {
         if (auth.loading) return null;
         if (!auth.isLoggedIn && state.matchedLocation != '/login') {
@@ -146,6 +149,16 @@ class AppRouter {
           path: '/settings',
           parentNavigatorKey: _rootKey,
           builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: '/privacy',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const PrivacyScreen(),
+        ),
+        GoRoute(
+          path: '/terms',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const TermsScreen(),
         ),
         GoRoute(
           path: '/login',

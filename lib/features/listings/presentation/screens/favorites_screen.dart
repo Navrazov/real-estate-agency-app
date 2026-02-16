@@ -35,15 +35,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     });
     try {
       final listings = await _repo.getFavorites();
-      setState(() {
-        _listings = listings;
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _listings = listings;
+          _loading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 

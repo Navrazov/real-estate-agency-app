@@ -182,6 +182,7 @@ class Listing {
     this.dduDate,
     this.assignmentOriginalPrice,
     this.completionDate,
+    this.locked = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -218,6 +219,7 @@ class Listing {
   final String? dduDate;
   final double? assignmentOriginalPrice;
   final String? completionDate;
+  final bool locked;
   final String createdAt;
   final String updatedAt;
 
@@ -255,6 +257,7 @@ class Listing {
       dduDate: json['dduDate'] as String?,
       assignmentOriginalPrice: (json['assignmentOriginalPrice'] as num?)?.toDouble(),
       completionDate: json['completionDate'] as String?,
+      locked: json['locked'] as bool? ?? false,
       createdAt: json['createdAt'] as String,
       updatedAt: json['updatedAt'] as String,
     );
@@ -340,6 +343,7 @@ class Listing {
 
   Listing copyWith({
     bool? isFavorite,
+    bool? locked,
   }) {
     return Listing(
       id: id,
@@ -368,6 +372,7 @@ class Listing {
       authorName: authorName,
       authorPhone: authorPhone,
       isFavorite: isFavorite ?? this.isFavorite,
+      locked: locked ?? this.locked,
       lat: lat,
       lng: lng,
       dduNumber: dduNumber,
@@ -393,6 +398,7 @@ class ListingsResponse {
   final int page;
   final int limit;
   final int totalPages;
+  final int? totalActive;
 
   ListingsResponse({
     required this.items,
@@ -400,6 +406,7 @@ class ListingsResponse {
     required this.page,
     required this.limit,
     required this.totalPages,
+    this.totalActive,
   });
 
   factory ListingsResponse.fromJson(Map<String, dynamic> json) {
@@ -411,6 +418,7 @@ class ListingsResponse {
       page: json['page'] as int,
       limit: json['limit'] as int,
       totalPages: json['totalPages'] as int,
+      totalActive: json['totalActive'] as int?,
     );
   }
 }

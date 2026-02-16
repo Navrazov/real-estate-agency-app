@@ -641,6 +641,12 @@ class _ListingsScreenState extends State<ListingsScreen> {
   }
 
   Widget _buildGridView(List<Listing> listings, AuthService auth) {
+    final totalActive = _response?.totalActive;
+    final hiddenCount = (totalActive != null && totalActive > listings.length)
+        ? (totalActive - listings.length).clamp(0, 7)
+        : 0;
+    final totalGridItems = listings.length + hiddenCount;
+
     return RefreshIndicator(
       onRefresh: _load,
       child: CustomScrollView(
@@ -650,25 +656,68 @@ class _ListingsScreenState extends State<ListingsScreen> {
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 0.75,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.68,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, i) {
-                  final l = listings[i];
-                  return _CompactListingCard(
-                    listing: l,
-                    onTap: () => context.push('/listing/${l.id}'),
-                    onFavorite: () => _toggleFavorite(l),
-                    formatPrice: _formatPrice,
-                    isLoggedIn: auth.isLoggedIn,
-                  );
+                  if (i < listings.length) {
+                    final l = listings[i];
+                    return _CompactListingCard(
+                      listing: l,
+                      onTap: () => context.push('/listing/${l.id}'),
+                      onFavorite: () => _toggleFavorite(l),
+                      formatPrice: _formatPrice,
+                      isLoggedIn: auth.isLoggedIn,
+                    );
+                  }
+                  // Skeleton card for hidden listings
+                  return _SkeletonListingCard();
                 },
-                childCount: listings.length,
+                childCount: totalGridItems,
               ),
             ),
           ),
+          // Subscription CTA banner for free users
+          if (totalActive != null && totalActive > listings.length)
+            SliverToBoxAdapter(
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      context.appColors.primary.withValues(alpha: 0.08),
+                      Colors.blue.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: context.appColors.primary.withValues(alpha: 0.2)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Доступно $totalActive ${_pluralize(totalActive, 'объявление', 'объявления', 'объявлений')}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: context.appColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Вы видите ${listings.length} из $totalActive. Оформите подписку, чтобы видеть все.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.appColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           if (_response != null && _response!.totalPages > 1)
             SliverToBoxAdapter(
               child: Padding(
@@ -704,6 +753,14 @@ class _ListingsScreenState extends State<ListingsScreen> {
         ],
       ),
     );
+  }
+
+  static String _pluralize(int n, String one, String few, String many) {
+    final mod10 = n % 10;
+    final mod100 = n % 100;
+    if (mod10 == 1 && mod100 != 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+    return many;
   }
 
   Widget _buildMapView(List<MapMarker> markers, List<Listing> listings) {
@@ -899,156 +956,184 @@ class _SortChip extends StatelessWidget {
 class _CompactListingCard extends StatelessWidget {
   const _CompactListingCard({
     required this.listing,
-    required this.onTap,
-    required this.onFavorite,
+    this.onTap,
+    this.onFavorite,
     required this.formatPrice,
     required this.isLoggedIn,
   });
 
   final Listing listing;
-  final VoidCallback onTap;
-  final VoidCallback onFavorite;
+  final VoidCallback? onTap;
+  final VoidCallback? onFavorite;
   final String Function(double) formatPrice;
   final bool isLoggedIn;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final imageWidget = listing.images.isNotEmpty
+        ? CachedNetworkImage(
+            imageUrl: listing.images.first,
+            fit: BoxFit.cover,
+            placeholder: (_, __) => Container(
+              color: context.appColors.surface,
+              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            ),
+            errorWidget: (_, __, ___) => Container(
+              color: context.appColors.surface,
+              child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
+            ),
+          )
+        : Container(
+            color: context.appColors.surface,
+            child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
+          );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: context.appColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       clipBehavior: Clip.antiAlias,
-      margin: EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        borderRadius: BorderRadius.circular(14),
+        child: Stack(
           children: [
-            // Image with aspect ratio 4:3
-            Stack(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Image with Hero animation
                 AspectRatio(
                   aspectRatio: 4 / 3,
-                  child: listing.images.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: listing.images.first,
-                          fit: BoxFit.cover,
-                          placeholder: (_, __) => Container(
-                            color: context.appColors.surface,
-                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                          ),
-                          errorWidget: (_, __, ___) => Container(
-                            color: context.appColors.surface,
-                            child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
-                          ),
-                        )
-                      : Container(
-                          color: context.appColors.surface,
-                          child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                        child: Hero(
+                          tag: 'listing-image-${listing.id}',
+                          child: imageWidget,
                         ),
+                      ),
+                      // Favorite button
+                      if (isLoggedIn)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: GestureDetector(
+                            onTap: onFavorite,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                listing.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                size: 16,
+                                color: listing.isFavorite ? const Color(0xFFE8788A) : context.appColors.textMuted,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                // Favorite button
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: GestureDetector(
-                    onTap: onFavorite,
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        listing.isFavorite ? Icons.favorite : Icons.favorite_border,
-                        size: 16,
-                        color: listing.isFavorite ? const Color(0xFFE8788A) : context.appColors.textMuted,
-                      ),
+                // Compact info
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Price
+                        if (listing.paymentType == PaymentType.installment)
+                          Text(
+                            'Первый взнос',
+                            style: TextStyle(fontSize: 10, color: context.appColors.accent, fontWeight: FontWeight.w600),
+                          ),
+                        Text(
+                          formatPrice(listing.price),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: context.appColors.primary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        // Title
+                        Text(
+                          listing.title,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const Spacer(),
+                        // Rooms / Area inline
+                        if (listing.rooms != null || listing.area != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              [
+                                if (listing.rooms != null) '${listing.rooms} комн.',
+                                if (listing.area != null) '${listing.area!.toStringAsFixed(0)} м\u00B2',
+                                if (listing.floor != null)
+                                  listing.totalFloors != null
+                                      ? '${listing.floor}/${listing.totalFloors} эт.'
+                                      : '${listing.floor} эт.',
+                              ].join(' \u00B7 '),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: context.appColors.textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        // Address
+                        Row(
+                          children: [
+                            Icon(Icons.location_on_outlined, size: 12, color: context.appColors.textMuted),
+                            const SizedBox(width: 2),
+                            Expanded(
+                              child: Text(
+                                listing.address,
+                                style: TextStyle(
+                                  color: context.appColors.textMuted,
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ],
-            ),
-            // Compact info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Price
-                    if (listing.paymentType == PaymentType.installment)
-                      Text(
-                        'Первый взнос',
-                        style: TextStyle(fontSize: 10, color: context.appColors.accent, fontWeight: FontWeight.w600),
-                      ),
-                    Text(
-                      formatPrice(listing.price),
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: context.appColors.primary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    // Title
-                    Text(
-                      listing.title,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    // Rooms / Area inline
-                    if (listing.rooms != null || listing.area != null)
-                      Text(
-                        [
-                          if (listing.rooms != null) '${listing.rooms} комн.',
-                          if (listing.area != null) '${listing.area!.toStringAsFixed(0)} м\u00B2',
-                          if (listing.floor != null)
-                            listing.totalFloors != null
-                                ? '${listing.floor}/${listing.totalFloors} эт.'
-                                : '${listing.floor} эт.',
-                        ].join(' \u00B7 '),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.appColors.textSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    const SizedBox(height: 4),
-                    // Address + Date
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_outlined, size: 12, color: context.appColors.textMuted),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(
-                            listing.address,
-                            style: TextStyle(
-                              color: context.appColors.textMuted,
-                              fontSize: 11,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          _formatDate(listing.createdAt),
-                          style: TextStyle(
-                            color: context.appColors.textMuted,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
             ),
           ],
         ),
@@ -1056,16 +1141,61 @@ class _CompactListingCard extends StatelessWidget {
     );
   }
 
-  static String _formatDate(String dateStr) {
-    final d = DateTime.tryParse(dateStr);
-    if (d == null) return '';
-    final now = DateTime.now();
-    final diff = now.difference(d).inDays;
-    if (diff == 0) return 'Сегодня';
-    if (diff == 1) return 'Вчера';
-    if (diff < 7) return '$diff дн.';
-    final months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-    return '${d.day} ${months[d.month - 1]}';
+}
+
+class _SkeletonListingCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.appColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image placeholder
+              AspectRatio(
+                aspectRatio: 4 / 3,
+                child: Container(color: context.appColors.surface),
+              ),
+              // Text placeholders
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(height: 14, width: 80, decoration: BoxDecoration(color: context.appColors.surface, borderRadius: BorderRadius.circular(4))),
+                      const SizedBox(height: 6),
+                      Container(height: 12, width: double.infinity, decoration: BoxDecoration(color: context.appColors.surface, borderRadius: BorderRadius.circular(4))),
+                      const SizedBox(height: 4),
+                      Container(height: 12, width: 100, decoration: BoxDecoration(color: context.appColors.surface, borderRadius: BorderRadius.circular(4))),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Lock overlay
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: context.appColors.surfaceWhite.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Center(
+                child: Icon(Icons.lock_outline, size: 24, color: context.appColors.textMuted),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

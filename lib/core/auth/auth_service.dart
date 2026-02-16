@@ -1,40 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 
-class SubscriptionInfo {
-  const SubscriptionInfo({
-    this.plan = 'free',
-    this.maxListings = 3,
-    this.maxConversations = 5,
-    this.canSeePhones = false,
-    this.priorityPlacement = false,
-    this.advancedStats = false,
-  });
-
-  final String plan;
-  final int maxListings;
-  final int maxConversations;
-  final bool canSeePhones;
-  final bool priorityPlacement;
-  final bool advancedStats;
-
-  bool get isPro => plan == 'pro';
-  bool get isFree => plan != 'pro';
-
-  factory SubscriptionInfo.fromJson(Map<String, dynamic> json) {
-    final limits = json['limits'] as Map<String, dynamic>? ?? {};
-    final maxListings = limits['maxListings'];
-    return SubscriptionInfo(
-      plan: json['plan'] as String? ?? 'free',
-      maxListings: maxListings is num && maxListings.isFinite ? maxListings.toInt() : 999999,
-      maxConversations: (limits['maxConversations'] as num?)?.toInt() ?? 5,
-      canSeePhones: limits['canSeePhones'] as bool? ?? false,
-      priorityPlacement: limits['priorityPlacement'] as bool? ?? false,
-      advancedStats: limits['advancedStats'] as bool? ?? false,
-    );
-  }
-}
-
 class User {
   User({
     required this.id,
@@ -45,7 +11,7 @@ class User {
     this.phone,
     this.avatar,
     this.favorites = const [],
-    this.subscription = const SubscriptionInfo(),
+    this.phoneHidden = false,
   });
 
   final String id;
@@ -56,11 +22,10 @@ class User {
   final String? phone;
   final String? avatar;
   final List<String> favorites;
-  final SubscriptionInfo subscription;
+  final bool phoneHidden;
 
   String get displayName => name ?? [firstName, lastName].where((s) => s != null && s.isNotEmpty).join(' ').nullIfEmpty ?? phone ?? 'Пользователь';
   bool get isAdmin => role == 'admin' || role == 'superadmin';
-  bool get isPro => subscription.isPro;
 }
 
 extension _StringExt on String {
@@ -75,10 +40,13 @@ class AuthService extends ChangeNotifier {
   final ApiClient _api = ApiClient();
   User? _user;
   bool _loading = true;
+  String _plan = 'free'; // 'free' | 'pro' | 'premium'
 
   User? get user => _user;
   bool get loading => _loading;
   bool get isLoggedIn => _user != null;
+  String get plan => _plan;
+  bool get canCreate => _plan != 'free';
 
   Future<void> _loadUser() async {
     final token = await _api.getToken();
@@ -96,18 +64,8 @@ class AuthService extends ChangeNotifier {
       if (data['blocked'] == true) {
         await _api.setToken(null);
         _user = null;
+        _plan = 'free';
       } else {
-        // Load subscription info in parallel
-        SubscriptionInfo sub = const SubscriptionInfo();
-        try {
-          final subData = await _api.get<Map<String, dynamic>>(
-            '/subscriptions/me',
-            (d) => d as Map<String, dynamic>,
-          );
-          sub = SubscriptionInfo.fromJson(subData);
-        } catch (_) {
-          // Default to free plan on error
-        }
         _user = User(
           id: data['id'] as String,
           role: data['role'] as String,
@@ -117,12 +75,23 @@ class AuthService extends ChangeNotifier {
           phone: data['phone'] as String?,
           avatar: data['avatar'] as String?,
           favorites: (data['favorites'] as List<dynamic>?)?.cast<String>() ?? [],
-          subscription: sub,
+          phoneHidden: data['phoneHidden'] as bool? ?? false,
         );
+        // Load subscription plan
+        try {
+          final sub = await _api.get<Map<String, dynamic>>(
+            '/subscriptions/me',
+            (d) => d as Map<String, dynamic>,
+          );
+          _plan = sub['plan'] as String? ?? 'free';
+        } catch (_) {
+          _plan = (_user!.isAdmin) ? 'premium' : 'free';
+        }
       }
     } catch (_) {
       await _api.setToken(null);
       _user = null;
+      _plan = 'free';
     }
     _loading = false;
     notifyListeners();
@@ -176,6 +145,7 @@ class AuthService extends ChangeNotifier {
     required String firstName,
     required String lastName,
     String? avatar,
+    bool phoneHidden = false,
   }) async {
     final body = <String, dynamic>{
       'phone': phone,
@@ -187,6 +157,7 @@ class AuthService extends ChangeNotifier {
     if (avatar != null && avatar.isNotEmpty) {
       body['avatar'] = avatar;
     }
+    body['phoneHidden'] = phoneHidden;
     final data = await _api.post<Map<String, dynamic>>(
       '/auth/register',
       body,
@@ -239,6 +210,7 @@ class AuthService extends ChangeNotifier {
   Future<void> logout() async {
     await _api.setToken(null);
     _user = null;
+    _plan = 'free';
     notifyListeners();
   }
 
@@ -253,7 +225,6 @@ class AuthService extends ChangeNotifier {
         phone: _user!.phone,
         avatar: _user!.avatar,
         favorites: favorites,
-        subscription: _user!.subscription,
       );
       notifyListeners();
     }

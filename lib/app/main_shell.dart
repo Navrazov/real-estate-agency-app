@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../app/theme/app_theme.dart';
 import '../core/auth/auth_service.dart';
 import '../core/socket/socket_service.dart';
@@ -63,6 +64,7 @@ class _MainShellState extends State<MainShell> {
     _socketService.off('new_message');
     _socketService.off('notifications_count');
     _socketService.off('notification');
+    _socketService.disconnect();
     super.dispose();
   }
 
@@ -73,6 +75,42 @@ class _MainShellState extends State<MainShell> {
       final count = await _chatRepo.getUnreadCount();
       if (mounted) setState(() => _unreadMessages = count);
     } catch (_) {}
+  }
+
+  void _showUpgradeDialog(BuildContext ctx) {
+    showDialog(
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Профессиональный доступ',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        content: const Text(
+          'Размещение объявлений и полный каталог доступны пользователям с активным профессиональным тарифом.',
+          style: TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: Text(
+              'Закрыть',
+              style: TextStyle(color: ctx.appColors.textMuted),
+            ),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogCtx).pop();
+              launchUrl(
+                Uri.parse('https://estate-hub.ru/subscription'),
+                mode: LaunchMode.externalApplication,
+              );
+            },
+            child: const Text('Перейти в личный кабинет'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadNotificationCount() async {
@@ -86,6 +124,9 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = AuthServiceScope.of(context);
+    final canCreate = auth.canCreate;
+
     return Scaffold(
       body: widget.navigationShell,
       bottomNavigationBar: Container(
@@ -95,6 +136,11 @@ class _MainShellState extends State<MainShell> {
         child: BottomNavigationBar(
           currentIndex: widget.navigationShell.currentIndex,
           onTap: (index) {
+            // Tab index 2 = "Разместить" — block free users
+            if (index == 2 && !canCreate) {
+              _showUpgradeDialog(context);
+              return;
+            }
             widget.navigationShell.goBranch(
               index,
               initialLocation: index == widget.navigationShell.currentIndex,
@@ -116,8 +162,11 @@ class _MainShellState extends State<MainShell> {
               icon: Icon(Icons.favorite_outline),
               label: 'Избранное',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.add_circle_outline),
+            BottomNavigationBarItem(
+              icon: Icon(
+                Icons.add_circle_outline,
+                color: canCreate ? null : context.appColors.textMuted.withValues(alpha: 0.4),
+              ),
               label: 'Разместить',
             ),
             BottomNavigationBarItem(

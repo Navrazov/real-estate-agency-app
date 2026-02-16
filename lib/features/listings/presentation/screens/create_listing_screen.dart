@@ -3,10 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
-import '../../../../core/auth/auth_service.dart';
 import '../../../../core/widgets/location_picker_map.dart';
 import '../../../../core/widgets/address_picker.dart';
-import '../../../../core/widgets/upgrade_prompt.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
 
@@ -98,21 +96,27 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   }
 
   Future<void> _pickImages() async {
-    final files = await _picker.pickMultiImage();
-    if (files.isEmpty) return;
-
-    setState(() {
-      _error = null;
-      _uploading = true;
-    });
-
     try {
-      final urls = await _repo.uploadImages(files);
-      setState(() => _imageUrls.addAll(urls));
+      final files = await _picker.pickMultiImage();
+      if (files.isEmpty) return;
+
+      setState(() {
+        _error = null;
+        _uploading = true;
+      });
+
+      try {
+        final urls = await _repo.uploadImages(files);
+        if (mounted) setState(() => _imageUrls.addAll(urls));
+      } catch (e) {
+        if (mounted) setState(() => _error = e.toString());
+      } finally {
+        if (mounted) setState(() => _uploading = false);
+      }
     } catch (e) {
-      setState(() => _error = e.toString());
-    } finally {
-      setState(() => _uploading = false);
+      if (mounted) {
+        setState(() => _error = 'Не удалось выбрать фото. Проверьте разрешения.');
+      }
     }
   }
 
@@ -122,17 +126,6 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
-    // Check subscription listing limit
-    final auth = AuthServiceScope.of(context);
-    final sub = auth.user?.subscription;
-    if (sub != null && sub.isFree) {
-      final myCount = await _repo.getMyCount();
-      if (myCount >= sub.maxListings) {
-        if (mounted) showUpgradePrompt(context, feature: 'Безлимит объявлений');
-        return;
-      }
-    }
 
     if (_imageUrls.isEmpty) {
       setState(() => _error = 'Добавьте хотя бы одну фотографию');

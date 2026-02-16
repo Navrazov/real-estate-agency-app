@@ -6,7 +6,6 @@ import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/widgets/listings_map.dart';
 import '../../../../core/widgets/skeleton.dart';
-import '../../../../core/widgets/upgrade_prompt.dart';
 import '../../../chat/data/chat_repository.dart';
 import '../../data/listings_repository.dart';
 import '../../domain/listing.dart';
@@ -151,7 +150,35 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                 )
               : _listing == null
                   ? const Center(child: Text('Объявление не найдено'))
-                  : CustomScrollView(
+                  : _listing!.locked
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.lock_outline, size: 64, color: context.appColors.textMuted),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Объявление недоступно',
+                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Для просмотра этого объявления необходима подписка',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: context.appColors.textSecondary),
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton(
+                                  onPressed: () => context.pop(),
+                                  child: const Text('Назад'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : CustomScrollView(
                       controller: _scrollController,
                       slivers: [
                         // Image Header
@@ -236,20 +263,30 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                     ? PageView.builder(
                                         itemCount: images.length,
                                         onPageChanged: (i) => setState(() => _imageIndex = i),
-                                        itemBuilder: (context, i) => CachedNetworkImage(
-                                          imageUrl: images[i],
-                                          fit: BoxFit.cover,
-                                          placeholder: (_, __) => Container(
-                                            color: context.appColors.surface,
-                                            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                          ),
-                                          errorWidget: (_, __, ___) => Container(
-                                            color: context.appColors.surface,
-                                            child: const Center(
-                                              child: Text('🏠', style: TextStyle(fontSize: 64)),
+                                        itemBuilder: (context, i) {
+                                          final image = CachedNetworkImage(
+                                            imageUrl: images[i],
+                                            fit: BoxFit.cover,
+                                            placeholder: (_, __) => Container(
+                                              color: context.appColors.surface,
+                                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                                             ),
-                                          ),
-                                        ),
+                                            errorWidget: (_, __, ___) => Container(
+                                              color: context.appColors.surface,
+                                              child: const Center(
+                                                child: Text('🏠', style: TextStyle(fontSize: 64)),
+                                              ),
+                                            ),
+                                          );
+                                          // Hero animation on first image to match catalog card
+                                          if (i == 0) {
+                                            return Hero(
+                                              tag: 'listing-image-${widget.listingId}',
+                                              child: image,
+                                            );
+                                          }
+                                          return image;
+                                        },
                                       )
                                     : Container(
                                         color: context.appColors.surface,
@@ -629,47 +666,23 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                                   ),
                                                 ),
                                                 if (_listing!.authorPhone != null)
-                                                  auth.user?.subscription.canSeePhones == true
-                                                      ? Text(
-                                                          _listing!.authorPhone!,
-                                                          style: TextStyle(
-                                                            color: context.appColors.primary,
-                                                            fontSize: 14,
-                                                          ),
-                                                        )
-                                                      : GestureDetector(
-                                                          onTap: () => showUpgradePrompt(context, feature: 'Просмотр телефонов'),
-                                                          child: Row(
-                                                            mainAxisSize: MainAxisSize.min,
-                                                            children: [
-                                                              Icon(Icons.lock_outline, size: 14, color: context.appColors.accent),
-                                                              const SizedBox(width: 4),
-                                                              Text(
-                                                                'Показать телефон',
-                                                                style: TextStyle(
-                                                                  color: context.appColors.accent,
-                                                                  fontSize: 14,
-                                                                  fontWeight: FontWeight.w500,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
+                                                  Text(
+                                                    _listing!.authorPhone!,
+                                                    style: TextStyle(
+                                                      color: context.appColors.primary,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
                                               ],
                                             ),
                                           ),
                                           if (_listing!.authorPhone != null)
-                                            auth.user?.subscription.canSeePhones == true
-                                                ? IconButton.filled(
-                                                    onPressed: () {
-                                                      // Could launch phone call
-                                                    },
-                                                    icon: const Icon(Icons.phone),
-                                                  )
-                                                : IconButton(
-                                                    onPressed: () => showUpgradePrompt(context, feature: 'Просмотр телефонов'),
-                                                    icon: Icon(Icons.lock_outline, color: context.appColors.textMuted),
-                                                  ),
+                                            IconButton.filled(
+                                              onPressed: () {
+                                                // Could launch phone call
+                                              },
+                                              icon: const Icon(Icons.phone),
+                                            ),
                                         ],
                                       ),
                                     ),

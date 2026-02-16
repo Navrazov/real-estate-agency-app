@@ -1,20 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:real_estate_app/core/auth/auth_service.dart';
 import 'package:real_estate_app/core/router/app_router.dart';
 import 'package:real_estate_app/core/theme/theme_service.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 
-class RealEstateApp extends StatelessWidget {
+class RealEstateApp extends StatefulWidget {
   const RealEstateApp({super.key});
 
   @override
+  State<RealEstateApp> createState() => _RealEstateAppState();
+}
+
+class _RealEstateAppState extends State<RealEstateApp> {
+  late final AuthService _auth;
+  late final ThemeService _themeService;
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth = AuthService();
+    _themeService = ThemeService();
+    _router = AppRouter.router(_auth);
+  }
+
+  @override
+  void dispose() {
+    _router.dispose();
+    _auth.dispose();
+    _themeService.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final auth = AuthService();
-    final themeService = ThemeService();
     return ThemeServiceScope(
-      themeService: themeService,
+      themeService: _themeService,
       child: AuthServiceScope(
-        auth: auth,
+        auth: _auth,
         child: Builder(
           builder: (context) {
             final ts = ThemeServiceScope.of(context);
@@ -23,7 +47,7 @@ class RealEstateApp extends StatelessWidget {
               theme: AppTheme.light,
               darkTheme: AppTheme.dark,
               themeMode: ts.themeMode,
-              routerConfig: AppRouter.router(auth),
+              routerConfig: _router,
             );
           },
         ),

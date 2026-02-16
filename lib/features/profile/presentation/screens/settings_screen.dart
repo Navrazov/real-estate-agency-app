@@ -44,10 +44,56 @@ class _PhoneInputFormatter extends TextInputFormatter {
     }
     if (digits.length > 10) digits = digits.substring(0, 10);
     final formatted = _formatPhoneDisplay(digits);
+    if (formatted.isEmpty) {
+      return const TextEditingValue(
+        text: '',
+        selection: TextSelection.collapsed(offset: 0),
+      );
+    }
+
+    final cursorPos = newValue.selection.baseOffset.clamp(0, newValue.text.length);
+    int subDigitsBefore = _countSubscriberDigitsBefore(newValue.text, cursorPos);
+    subDigitsBefore = subDigitsBefore.clamp(0, digits.length);
+    final newCursorPos = _findCursorPosition(formatted, subDigitsBefore);
+
     return TextEditingValue(
       text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
+      selection: TextSelection.collapsed(offset: newCursorPos),
     );
+  }
+
+  int _countSubscriberDigitsBefore(String text, int pos) {
+    int count = 0;
+    bool firstDigitSeen = false;
+    for (int i = 0; i < pos; i++) {
+      final c = text.codeUnitAt(i);
+      if (c >= 48 && c <= 57) {
+        if (!firstDigitSeen) {
+          firstDigitSeen = true;
+          if (text[i] == '7' || text[i] == '8') continue;
+        }
+        count++;
+      }
+    }
+    return count;
+  }
+
+  int _findCursorPosition(String formatted, int n) {
+    if (n <= 0) {
+      final idx = formatted.indexOf('(');
+      return idx >= 0 ? idx + 1 : formatted.length;
+    }
+    int count = 0;
+    bool prefixSkipped = false;
+    for (int i = 0; i < formatted.length; i++) {
+      final c = formatted.codeUnitAt(i);
+      if (c >= 48 && c <= 57) {
+        if (!prefixSkipped) { prefixSkipped = true; continue; }
+        count++;
+        if (count == n) return i + 1;
+      }
+    }
+    return formatted.length;
   }
 }
 
@@ -430,6 +476,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: _buildPhoneSection(user),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // --- Phone Visibility ---
+          _sectionTitle('Скрыть номер'),
+          const SizedBox(height: 8),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    user?.phoneHidden == true ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: context.appColors.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Скрыть номер',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        Text(
+                          'Другие пользователи не смогут видеть ваш номер телефона',
+                          style: TextStyle(fontSize: 12, color: context.appColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: user?.phoneHidden == true,
+                    onChanged: (val) async {
+                      try {
+                        await _apiClient.patch<Map<String, dynamic>>(
+                          '/users/me',
+                          {'phoneHidden': val},
+                          (d) => d as Map<String, dynamic>,
+                        );
+                        if (mounted) {
+                          await AuthServiceScope.of(context).reloadUser();
+                        }
+                      } catch (e) {
+                        if (mounted) _showSnackBar('Ошибка: $e');
+                      }
+                    },
+                    activeThumbColor: context.appColors.primary,
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 24),

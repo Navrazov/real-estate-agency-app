@@ -324,7 +324,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       : null,
                   child: _otherUserProfile!.avatar == null
                       ? Text(
-                          _otherUserProfile!.displayName[0].toUpperCase(),
+                          _otherUserProfile!.displayName.isNotEmpty
+                              ? _otherUserProfile!.displayName[0].toUpperCase()
+                              : '?',
                           style: TextStyle(
                             color: context.appColors.primary,
                             fontWeight: FontWeight.bold,
