@@ -38,25 +38,25 @@ class Conversation {
 class OtherUser {
   final String id;
   final String? name;
-  final String email;
+  final String? phone;
   final String? avatar;
   final String? lastSeen;
   final bool online;
 
-  OtherUser({required this.id, this.name, required this.email, this.avatar, this.lastSeen, this.online = false});
+  OtherUser({required this.id, this.name, this.phone, this.avatar, this.lastSeen, this.online = false});
 
   factory OtherUser.fromJson(Map<String, dynamic> json) {
     return OtherUser(
       id: json['id'] as String,
       name: json['name'] as String?,
-      email: json['email'] as String,
+      phone: json['phone'] as String?,
       avatar: json['avatar'] as String?,
       lastSeen: json['lastSeen'] as String?,
       online: json['online'] as bool? ?? false,
     );
   }
 
-  String get displayName => name ?? email.split('@').first;
+  String get displayName => name ?? phone ?? 'Пользователь';
 }
 
 class Message {

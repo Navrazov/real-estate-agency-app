@@ -1,7 +1,6 @@
 class UserProfile {
   final String id;
   final String? name;
-  final String email;
   final String? phone;
   final String? avatar;
   final String createdAt;
@@ -12,7 +11,6 @@ class UserProfile {
   UserProfile({
     required this.id,
     this.name,
-    required this.email,
     this.phone,
     this.avatar,
     required this.createdAt,
@@ -21,7 +19,7 @@ class UserProfile {
     this.listings = const [],
   });
 
-  String get displayName => name ?? email.split('@').first;
+  String get displayName => name ?? phone ?? 'Пользователь';
 
   UserProfile copyWith({
     String? lastSeen,
@@ -30,7 +28,6 @@ class UserProfile {
     return UserProfile(
       id: id,
       name: name,
-      email: email,
       phone: phone,
       avatar: avatar,
       createdAt: createdAt,
@@ -44,7 +41,6 @@ class UserProfile {
     return UserProfile(
       id: json['id'] as String,
       name: json['name'] as String?,
-      email: json['email'] as String,
       phone: json['phone'] as String?,
       avatar: json['avatar'] as String?,
       createdAt: json['createdAt'] as String,

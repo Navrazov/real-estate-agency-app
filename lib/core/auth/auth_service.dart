@@ -39,26 +39,22 @@ class User {
   User({
     required this.id,
     required this.role,
-    this.email,
     this.name,
     this.phone,
     this.avatar,
     this.favorites = const [],
-    this.emailVerified = false,
     this.subscription = const SubscriptionInfo(),
   });
 
   final String id;
-  final String? email;
   final String role;
   final String? name;
   final String? phone;
   final String? avatar;
   final List<String> favorites;
-  final bool emailVerified;
   final SubscriptionInfo subscription;
 
-  String get displayName => name ?? email?.split('@').first ?? phone ?? 'Пользователь';
+  String get displayName => name ?? phone ?? 'Пользователь';
   bool get isAdmin => role == 'admin';
   bool get isPro => subscription.isPro;
 }
@@ -106,13 +102,11 @@ class AuthService extends ChangeNotifier {
         }
         _user = User(
           id: data['id'] as String,
-          email: data['email'] as String?,
           role: data['role'] as String,
           name: data['name'] as String?,
           phone: data['phone'] as String?,
           avatar: data['avatar'] as String?,
           favorites: (data['favorites'] as List<dynamic>?)?.cast<String>() ?? [],
-          emailVerified: data['emailVerified'] as bool? ?? false,
           subscription: sub,
         );
       }
@@ -124,15 +118,11 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Login with identifier (phone or email) and password.
-  Future<void> login(String identifier, String password) async {
-    final isPhone = identifier.startsWith('+') || RegExp(r'^\d{7,}$').hasMatch(identifier);
+  /// Login with phone number and password.
+  Future<void> login(String phone, String password) async {
     final data = await _api.post<Map<String, dynamic>>(
       '/auth/login',
-      {
-        if (isPhone) 'phone': identifier else 'email': identifier,
-        'password': password,
-      },
+      {'phone': phone, 'password': password},
       (d) => d as Map<String, dynamic>,
       withAuth: false,
     );
@@ -142,10 +132,11 @@ class AuthService extends ChangeNotifier {
 
   /// Sends verification code to the given phone number.
   /// [method] can be 'call' (default) or 'telegram'.
-  Future<void> sendCode(String phone, {String method = 'call'}) async {
+  /// [checkExists] if true, server will check if phone is already registered.
+  Future<void> sendCode(String phone, {String method = 'call', bool checkExists = false}) async {
     await _api.post<Map<String, dynamic>>(
       '/auth/send-code',
-      {'phone': phone, 'method': method},
+      {'phone': phone, 'method': method, 'checkExists': checkExists},
       (d) => d as Map<String, dynamic>,
       withAuth: false,
     );
@@ -190,25 +181,6 @@ class AuthService extends ChangeNotifier {
     await _loadUser();
   }
 
-  /// Send verification code to the given email (authenticated).
-  Future<void> sendEmailCode(String email) async {
-    await _api.post<Map<String, dynamic>>(
-      '/users/me/email/send-code',
-      {'email': email},
-      (d) => d as Map<String, dynamic>,
-    );
-  }
-
-  /// Verify email with code (authenticated), then refresh user.
-  Future<void> verifyEmailCode(String email, String code) async {
-    await _api.post<Map<String, dynamic>>(
-      '/users/me/email/verify',
-      {'email': email, 'code': code},
-      (d) => d as Map<String, dynamic>,
-    );
-    await _loadUser();
-  }
-
   /// Send verification code for phone change (authenticated).
   Future<void> sendPhoneChangeCode(String phone) async {
     await _api.post<Map<String, dynamic>>(
@@ -238,13 +210,11 @@ class AuthService extends ChangeNotifier {
     if (_user != null) {
       _user = User(
         id: _user!.id,
-        email: _user!.email,
         role: _user!.role,
         name: _user!.name,
         phone: _user!.phone,
         avatar: _user!.avatar,
         favorites: favorites,
-        emailVerified: _user!.emailVerified,
         subscription: _user!.subscription,
       );
       notifyListeners();

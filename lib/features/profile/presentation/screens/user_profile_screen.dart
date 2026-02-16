@@ -213,26 +213,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                       }),
                                       const SizedBox(height: 12),
 
-                                      // Email
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.email_outlined,
-                                              size: 16, color: context.appColors.textSecondary),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            _profile!.email,
-                                            style: TextStyle(
-                                              color: context.appColors.textSecondary,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-
                                       // Phone
-                                      if (_profile!.phone != null) ...[
-                                        const SizedBox(height: 8),
+                                      if (_profile!.phone != null)
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
@@ -248,7 +230,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                             ),
                                           ],
                                         ),
-                                      ],
 
                                       // Member since
                                       const SizedBox(height: 12),

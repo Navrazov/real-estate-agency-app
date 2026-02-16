@@ -19,13 +19,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _apiClient = ApiClient();
   final _picker = ImagePicker();
 
-  // Email section
-  final _emailCtrl = TextEditingController();
-  final _emailCodeCtrl = TextEditingController();
-  bool _emailCodeSent = false;
-  bool _emailLoading = false;
-  bool _editingEmail = false;
-
   // Phone section
   final _phoneCtrl = TextEditingController();
   final _phoneCodeCtrl = TextEditingController();
@@ -38,21 +31,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
-    _emailCtrl.dispose();
-    _emailCodeCtrl.dispose();
     _phoneCtrl.dispose();
     _phoneCodeCtrl.dispose();
     super.dispose();
-  }
-
-  void _resetEmailState() {
-    setState(() {
-      _editingEmail = false;
-      _emailCodeSent = false;
-      _emailLoading = false;
-      _emailCtrl.clear();
-      _emailCodeCtrl.clear();
-    });
   }
 
   void _resetPhoneState() {
@@ -63,56 +44,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _phoneCtrl.clear();
       _phoneCodeCtrl.clear();
     });
-  }
-
-  Future<void> _sendEmailCode() async {
-    final email = _emailCtrl.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
-      _showSnackBar('Введите корректный email');
-      return;
-    }
-
-    setState(() => _emailLoading = true);
-    try {
-      final auth = AuthServiceScope.of(context);
-      await auth.sendEmailCode(email);
-      if (mounted) {
-        setState(() {
-          _emailCodeSent = true;
-          _emailLoading = false;
-        });
-        _showSnackBar('Код отправлен на $email');
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _emailLoading = false);
-        _showSnackBar(e.toString().replaceFirst('Exception: ', ''));
-      }
-    }
-  }
-
-  Future<void> _verifyEmailCode() async {
-    final email = _emailCtrl.text.trim();
-    final code = _emailCodeCtrl.text.trim();
-    if (code.length < 4) {
-      _showSnackBar('Введите 4-значный код');
-      return;
-    }
-
-    setState(() => _emailLoading = true);
-    try {
-      final auth = AuthServiceScope.of(context);
-      await auth.verifyEmailCode(email, code);
-      if (mounted) {
-        _resetEmailState();
-        _showSnackBar('Email успешно подтвержден');
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _emailLoading = false);
-        _showSnackBar(e.toString().replaceFirst('Exception: ', ''));
-      }
-    }
   }
 
   Future<void> _sendPhoneChangeCode() async {
@@ -200,19 +131,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
         // Refresh user data in auth service
         if (mounted) {
-          // Re-read the auth to trigger a refresh
           final auth = AuthServiceScope.of(context);
-          // We need to reload user; calling a dummy method or using internal reload
-          // Since _loadUser is private, we trigger a re-login by calling verifyEmailCode-like approach
-          // Actually, we can use the fact that auth notifies listeners. Let's just patch and rely on the
-          // next navigation to refresh. But for immediate feedback, let's call login refresh.
-          // The simplest approach: call sendEmailCode to trigger _loadUser... but that's hacky.
-          // Better: add a public refresh method or just reconstruct the user locally.
-          // Since we can't modify the private _loadUser, let's trigger a full reload by logging out/in.
-          // Actually the simplest: the verifyPhoneChange and verifyEmailCode both call _loadUser.
-          // For avatar, we don't have such a method. Let's just do a workaround:
-          // We'll make a dummy authenticated GET to /users/me and update the user.
-          // Actually, we can just use auth's internal state. Let's read the user data directly.
           await _reloadUser(auth);
           _showSnackBar('Фото профиля обновлено');
         }
@@ -227,14 +146,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  /// Reload the user by making a profile-level change that triggers _loadUser.
-  /// Since _loadUser is private, we use a workaround: PATCH with empty body and
-  /// then use sendEmailCode/verifyEmailCode. But actually, the cleanest way is
-  /// to read /users/me and update the auth user state.
   Future<void> _reloadUser(AuthService auth) async {
-    // We use verifyPhoneChange with the current phone to trigger _loadUser.
-    // Actually, we can't do that without a code. Let's just call the API and
-    // reconstruct the user manually.
     try {
       final data = await _apiClient.get<Map<String, dynamic>>(
         '/users/me',
@@ -346,17 +258,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
-          // --- Email Section ---
-          _buildSectionTitle('Email'),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: _buildEmailSection(user),
-            ),
-          ),
-          const SizedBox(height: 24),
-
           // --- Phone Section ---
           _buildSectionTitle('Телефон'),
           const SizedBox(height: 8),
@@ -379,153 +280,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         fontWeight: FontWeight.w600,
         color: context.appColors.textPrimary,
       ),
-    );
-  }
-
-  Widget _buildEmailSection(User? user) {
-    final hasEmail = user?.email != null && user!.email!.isNotEmpty;
-
-    if (!_editingEmail) {
-      if (hasEmail) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.email_outlined,
-                    color: context.appColors.textSecondary, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    user.email!,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
-                if (user.emailVerified)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: context.appColors.success.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.verified, color: context.appColors.success, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Подтвержден',
-                          style:
-                              TextStyle(color: context.appColors.success, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () => setState(() => _editingEmail = true),
-              child: const Text('Изменить email'),
-            ),
-          ],
-        );
-      } else {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Email не привязан',
-              style: TextStyle(color: context.appColors.textSecondary),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => setState(() => _editingEmail = true),
-              icon: const Icon(Icons.add),
-              label: const Text('Добавить email'),
-            ),
-          ],
-        );
-      }
-    }
-
-    // Editing email flow
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TextFormField(
-          controller: _emailCtrl,
-          decoration: const InputDecoration(
-            labelText: 'Email',
-            prefixIcon: Icon(Icons.email_outlined),
-            hintText: 'your@email.com',
-          ),
-          keyboardType: TextInputType.emailAddress,
-          autocorrect: false,
-          enabled: !_emailLoading && !_emailCodeSent,
-        ),
-        const SizedBox(height: 12),
-        if (!_emailCodeSent)
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _emailLoading ? null : _sendEmailCode,
-                  child: _emailLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Отправить код'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: _resetEmailState,
-                child: const Text('Отмена'),
-              ),
-            ],
-          ),
-        if (_emailCodeSent) ...[
-          TextFormField(
-            controller: _emailCodeCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Код подтверждения',
-              prefixIcon: Icon(Icons.sms_outlined),
-              hintText: '1234',
-            ),
-            keyboardType: TextInputType.number,
-            maxLength: 4,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            enabled: !_emailLoading,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _emailLoading ? null : _verifyEmailCode,
-                  child: _emailLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text('Подтвердить'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: _resetEmailState,
-                child: const Text('Отмена'),
-              ),
-            ],
-          ),
-        ],
-      ],
     );
   }
 

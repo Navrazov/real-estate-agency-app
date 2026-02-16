@@ -110,6 +110,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return '+7$digits';
   }
 
+  String _rawLoginPhone() {
+    final digits = _identifierCtrl.text.replaceAll(RegExp(r'[^\d]'), '');
+    if (digits.startsWith('7')) return '+$digits';
+    if (digits.startsWith('8')) return '+7${digits.substring(1)}';
+    return '+7$digits';
+  }
+
   void _startCooldown() {
     _cooldownTimer?.cancel();
     setState(() => _cooldown = _cooldownSeconds);
@@ -141,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final auth = AuthServiceScope.of(context);
-      await auth.sendCode(phone, method: method);
+      await auth.sendCode(phone, method: method, checkExists: true);
       if (mounted) {
         setState(() {
           _codeSent = true;
@@ -256,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // Avatar upload failed but registration succeeded
         }
       } else {
-        await auth.login(_identifierCtrl.text.trim(), _passCtrl.text);
+        await auth.login(_rawLoginPhone(), _passCtrl.text);
       }
       if (mounted) context.go('/');
     } catch (e) {
@@ -469,19 +476,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   List<Widget> _buildLoginFields() {
     return [
-      // Identifier (Phone or Email)
+      // Phone
       TextFormField(
         controller: _identifierCtrl,
         decoration: const InputDecoration(
-          labelText: 'Телефон или Email',
-          prefixIcon: Icon(Icons.person_outline),
-          hintText: '+7 (999) 123-45-67 или email',
+          labelText: 'Телефон',
+          prefixIcon: Icon(Icons.phone_outlined),
+          hintText: '+7 (999) 123-45-67',
         ),
-        keyboardType: TextInputType.emailAddress,
-        autocorrect: false,
+        keyboardType: TextInputType.phone,
+        inputFormatters: [_PhoneInputFormatter()],
         enabled: !_loading,
         validator: (v) {
-          if (v == null || v.isEmpty) return 'Введите телефон или email';
+          if (v == null || v.isEmpty) return 'Введите телефон';
+          final digits = v.replaceAll(RegExp(r'[^\d]'), '');
+          if (digits.length < 11) return 'Введите полный номер';
           return null;
         },
       ),

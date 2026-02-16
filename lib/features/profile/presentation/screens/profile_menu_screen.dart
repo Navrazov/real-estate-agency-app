@@ -60,15 +60,7 @@ class ProfileMenuScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        user?.email ?? '',
-                        style: TextStyle(
-                          color: colors.textSecondary,
-                          fontSize: 14,
-                        ),
-                      ),
-                      if (user?.phone != null) ...[
-                        const SizedBox(height: 2),
+                      if (user?.phone != null)
                         Text(
                           user!.phone!,
                           style: TextStyle(
@@ -76,7 +68,6 @@ class ProfileMenuScreen extends StatelessWidget {
                             fontSize: 14,
                           ),
                         ),
-                      ],
                     ],
                   ),
                 ),
