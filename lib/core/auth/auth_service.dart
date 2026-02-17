@@ -214,6 +214,14 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteAccount() async {
+    await _api.delete('/users/me/account');
+    await _api.setToken(null);
+    _user = null;
+    _plan = 'free';
+    notifyListeners();
+  }
+
   void updateFavorites(List<String> favorites) {
     if (_user != null) {
       _user = User(

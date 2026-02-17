@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -541,6 +542,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: _buildPasswordSection(),
             ),
           ),
+
+          const SizedBox(height: 32),
+
+          // --- Delete Account ---
+          _buildDeleteAccountSection(),
         ],
       ),
     );
@@ -866,5 +872,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ],
     );
+  }
+
+  // ── Delete account section ──
+
+  Widget _buildDeleteAccountSection() {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: context.appColors.error.withValues(alpha: 0.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Удаление аккаунта',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: context.appColors.error),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Это действие нельзя отменить. Все ваши данные и объявления будут удалены навсегда.',
+              style: TextStyle(fontSize: 13, color: context.appColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _confirmDeleteAccount,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.appColors.error,
+                  side: BorderSide(color: context.appColors.error),
+                ),
+                child: const Text('Удалить аккаунт'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить аккаунт?'),
+        content: const Text('Это действие нельзя отменить. Все ваши данные и объявления будут удалены навсегда.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('Удалить', style: TextStyle(color: context.appColors.error)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    try {
+      await AuthServiceScope.of(context).deleteAccount();
+      if (mounted) context.go('/');
+    } catch (e) {
+      if (mounted) _showSnackBar('Ошибка: $e');
+    }
   }
 }
