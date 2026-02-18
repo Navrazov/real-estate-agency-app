@@ -6,6 +6,14 @@
 *.swp
 .buildlog/
 .history
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
 
 
 

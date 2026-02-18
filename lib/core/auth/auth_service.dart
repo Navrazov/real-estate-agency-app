@@ -12,6 +12,7 @@ class User {
     this.avatar,
     this.favorites = const [],
     this.phoneHidden = false,
+    this.birthDate,
   });
 
   final String id;
@@ -23,6 +24,7 @@ class User {
   final String? avatar;
   final List<String> favorites;
   final bool phoneHidden;
+  final DateTime? birthDate;
 
   String get displayName => name ?? [firstName, lastName].where((s) => s != null && s.isNotEmpty).join(' ').nullIfEmpty ?? phone ?? 'Пользователь';
   bool get isAdmin => role == 'admin' || role == 'superadmin';
@@ -76,6 +78,7 @@ class AuthService extends ChangeNotifier {
           avatar: data['avatar'] as String?,
           favorites: (data['favorites'] as List<dynamic>?)?.cast<String>() ?? [],
           phoneHidden: data['phoneHidden'] as bool? ?? false,
+          birthDate: data['birthDate'] != null ? DateTime.tryParse(data['birthDate'] as String) : null,
         );
         // Load subscription plan
         try {
@@ -146,6 +149,7 @@ class AuthService extends ChangeNotifier {
     required String lastName,
     String? avatar,
     bool phoneHidden = false,
+    DateTime? birthDate,
   }) async {
     final body = <String, dynamic>{
       'phone': phone,
@@ -158,6 +162,9 @@ class AuthService extends ChangeNotifier {
       body['avatar'] = avatar;
     }
     body['phoneHidden'] = phoneHidden;
+    if (birthDate != null) {
+      body['birthDate'] = birthDate.toIso8601String();
+    }
     final data = await _api.post<Map<String, dynamic>>(
       '/auth/register',
       body,
@@ -222,6 +229,37 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Start Telegram auth flow. Returns bot URL and nonce for polling.
+  Future<Map<String, String>> telegramInit() async {
+    final data = await _api.post<Map<String, dynamic>>(
+      '/auth/telegram/init',
+      {},
+      (d) => d as Map<String, dynamic>,
+      withAuth: false,
+    );
+    return {
+      'nonce': data['nonce'] as String,
+      'botUrl': data['botUrl'] as String,
+    };
+  }
+
+  /// Poll for Telegram auth completion.
+  /// Returns true if done, false if still pending.
+  Future<bool> telegramCheck(String nonce) async {
+    final data = await _api.get<Map<String, dynamic>>(
+      '/auth/telegram/check/$nonce',
+      (d) => d as Map<String, dynamic>,
+      withAuth: false,
+    );
+    if (data['status'] == 'done') {
+      final result = data['result'] as Map<String, dynamic>;
+      await _api.setToken(result['token'] as String);
+      await _loadUser();
+      return true;
+    }
+    return false;
+  }
+
   void updateFavorites(List<String> favorites) {
     if (_user != null) {
       _user = User(
@@ -233,6 +271,8 @@ class AuthService extends ChangeNotifier {
         phone: _user!.phone,
         avatar: _user!.avatar,
         favorites: favorites,
+        phoneHidden: _user!.phoneHidden,
+        birthDate: _user!.birthDate,
       );
       notifyListeners();
     }

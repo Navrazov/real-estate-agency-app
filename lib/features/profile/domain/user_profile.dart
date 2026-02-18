@@ -6,6 +6,7 @@ class UserProfile {
   final String createdAt;
   final String? lastSeen;
   final bool online;
+  final String? birthDate;
   final List<ProfileListing> listings;
 
   UserProfile({
@@ -16,6 +17,7 @@ class UserProfile {
     required this.createdAt,
     this.lastSeen,
     this.online = false,
+    this.birthDate,
     this.listings = const [],
   });
 
@@ -33,6 +35,7 @@ class UserProfile {
       createdAt: createdAt,
       lastSeen: lastSeen ?? this.lastSeen,
       online: online ?? this.online,
+      birthDate: birthDate,
       listings: listings,
     );
   }
@@ -46,6 +49,7 @@ class UserProfile {
       createdAt: json['createdAt'] as String,
       lastSeen: json['lastSeen'] as String?,
       online: json['online'] as bool? ?? false,
+      birthDate: json['birthDate'] as String?,
       listings: (json['listings'] as List<dynamic>?)
               ?.map((e) => ProfileListing.fromJson(e as Map<String, dynamic>))
               .toList() ??

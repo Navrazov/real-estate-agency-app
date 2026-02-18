@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:real_estate_app/core/auth/auth_service.dart';
 import 'package:real_estate_app/core/router/app_router.dart';
@@ -48,6 +49,16 @@ class _RealEstateAppState extends State<RealEstateApp> {
               darkTheme: AppTheme.dark,
               themeMode: ts.themeMode,
               routerConfig: _router,
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: const [
+                Locale('ru'),
+                Locale('en'),
+              ],
+              locale: const Locale('ru'),
             );
           },
         ),

@@ -83,6 +83,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         )} ₽';
   }
 
+  String _formatBirthDate(String birthDateStr) {
+    final d = DateTime.tryParse(birthDateStr);
+    if (d == null) return '';
+    const months = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+    ];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
   String _formatMemberSince(String createdAtStr) {
     final d = DateTime.tryParse(createdAtStr);
     if (d == null) return '';
@@ -229,6 +239,27 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                               ),
                                             ),
                                           ],
+                                        ),
+
+                                      // Birth date
+                                      if (_profile!.birthDate != null)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 8),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.cake_outlined,
+                                                  size: 16, color: context.appColors.textSecondary),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                _formatBirthDate(_profile!.birthDate!),
+                                                style: TextStyle(
+                                                  color: context.appColors.textSecondary,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
 
                                       // Member since

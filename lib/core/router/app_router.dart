@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/main_shell.dart';
+import '../../features/agents/presentation/screens/agents_screen.dart';
 import '../../features/listings/presentation/screens/listings_screen.dart';
 import '../../features/listings/presentation/screens/listing_detail_screen.dart';
 import '../../features/listings/presentation/screens/create_listing_screen.dart';
@@ -149,6 +150,11 @@ class AppRouter {
           path: '/settings',
           parentNavigatorKey: _rootKey,
           builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: '/agents',
+          parentNavigatorKey: _rootKey,
+          builder: (context, state) => const AgentsScreen(),
         ),
         GoRoute(
           path: '/privacy',

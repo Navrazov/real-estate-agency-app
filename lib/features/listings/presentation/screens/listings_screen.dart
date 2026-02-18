@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
+import '../../../../core/theme/theme_service.dart';
 import '../../../../core/widgets/listings_map.dart';
 import '../../../../core/widgets/skeleton.dart';
 import '../../data/listings_repository.dart';
@@ -203,6 +204,22 @@ class _ListingsScreenState extends State<ListingsScreen> {
             const Text('EstateHub'),
           ],
         ),
+        actions: [
+          IconButton(
+            onPressed: () => context.push('/agents'),
+            icon: const Icon(Icons.people_outline),
+            tooltip: 'Агенты',
+          ),
+          IconButton(
+            onPressed: () => ThemeServiceScope.of(context).toggleTheme(),
+            icon: Icon(
+              ThemeServiceScope.of(context).isDark
+                  ? Icons.light_mode_outlined
+                  : Icons.dark_mode_outlined,
+            ),
+            tooltip: 'Сменить тему',
+          ),
+        ],
       ),
       body: Column(
         children: [

@@ -140,8 +140,8 @@ class _SkeletonCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 SkeletonBox(width: MediaQuery.of(context).size.width * 0.25, height: 12),
                 const SizedBox(height: 6),
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     SkeletonBox(width: 50, height: 16),
                     SizedBox(width: 8),
                     SkeletonBox(width: 40, height: 16),
@@ -176,53 +176,53 @@ class SkeletonListingDetail extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(8),
               child: Row(
-                children: List.generate(4, (_) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: const SkeletonBox(width: 60, height: 60, borderRadius: 8),
+                children: List.generate(4, (_) => const Padding(
+                  padding: EdgeInsets.only(right: 8),
+                  child: SkeletonBox(width: 60, height: 60, borderRadius: 8),
                 )),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16),
+            const Padding(
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Badges
-                  Row(children: const [
+                  Row(children: [
                     SkeletonBox(width: 80, height: 24, borderRadius: 12),
                     SizedBox(width: 8),
                     SkeletonBox(width: 60, height: 24, borderRadius: 12),
                   ]),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   // Price
-                  const SkeletonBox(width: 160, height: 28),
-                  const SizedBox(height: 8),
+                  SkeletonBox(width: 160, height: 28),
+                  SizedBox(height: 8),
                   // Title
-                  const SkeletonBox(height: 20),
-                  const SizedBox(height: 8),
+                  SkeletonBox(height: 20),
+                  SizedBox(height: 8),
                   // Address
-                  const SkeletonBox(width: 220, height: 14),
-                  const SizedBox(height: 16),
+                  SkeletonBox(width: 220, height: 14),
+                  SizedBox(height: 16),
                   // Stats grid
-                  Row(children: const [
+                  Row(children: [
                     Expanded(child: SkeletonBox(height: 64, borderRadius: 12)),
                     SizedBox(width: 8),
                     Expanded(child: SkeletonBox(height: 64, borderRadius: 12)),
                     SizedBox(width: 8),
                     Expanded(child: SkeletonBox(height: 64, borderRadius: 12)),
                   ]),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   // Description
-                  const SkeletonBox(width: 100, height: 18),
-                  const SizedBox(height: 8),
-                  const SkeletonBox(height: 14),
-                  const SizedBox(height: 4),
-                  const SkeletonBox(height: 14),
-                  const SizedBox(height: 4),
-                  const SkeletonBox(width: 200, height: 14),
-                  const SizedBox(height: 16),
+                  SkeletonBox(width: 100, height: 18),
+                  SizedBox(height: 8),
+                  SkeletonBox(height: 14),
+                  SizedBox(height: 4),
+                  SkeletonBox(height: 14),
+                  SizedBox(height: 4),
+                  SkeletonBox(width: 200, height: 14),
+                  SizedBox(height: 16),
                   // Button
-                  const SkeletonBox(height: 48, borderRadius: 12),
+                  SkeletonBox(height: 48, borderRadius: 12),
                 ],
               ),
             ),
@@ -246,25 +246,25 @@ class SkeletonConversationList extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         itemCount: count,
         separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (_, __) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        itemBuilder: (_, __) => const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              const SkeletonBox(width: 48, height: 48, borderRadius: 24),
-              const SizedBox(width: 12),
+              SkeletonBox(width: 48, height: 48, borderRadius: 24),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         SkeletonBox(width: 120, height: 16),
                         SkeletonBox(width: 40, height: 12),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    const SkeletonBox(width: 200, height: 12),
+                    SizedBox(height: 6),
+                    SkeletonBox(width: 200, height: 12),
                   ],
                 ),
               ),
@@ -342,15 +342,15 @@ class SkeletonFavoritesList extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           clipBehavior: Clip.antiAlias,
-          child: Row(
+          child: const Row(
             children: [
-              const SkeletonBox(width: 120, height: 120, borderRadius: 0),
+              SkeletonBox(width: 120, height: 120, borderRadius: 0),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       SkeletonBox(width: 70, height: 22, borderRadius: 6),
                       SizedBox(height: 8),
                       SkeletonBox(height: 16),
@@ -390,15 +390,15 @@ class SkeletonMyListings extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           clipBehavior: Clip.antiAlias,
-          child: Row(
+          child: const Row(
             children: [
-              const SkeletonBox(width: 100, height: 100, borderRadius: 0),
+              SkeletonBox(width: 100, height: 100, borderRadius: 0),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       SkeletonBox(width: 60, height: 18, borderRadius: 6),
                       SizedBox(height: 6),
                       SkeletonBox(height: 16),
@@ -445,10 +445,10 @@ class SkeletonProfile extends StatelessWidget {
             const SkeletonBox(width: 80, height: 14),
             const SizedBox(height: 16),
             // Info rows
-            ...List.generate(3, (_) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+            ...List.generate(3, (_) => const Padding(
+              padding: EdgeInsets.only(bottom: 10),
               child: Row(
-                children: const [
+                children: [
                   SkeletonBox(width: 20, height: 20, borderRadius: 4),
                   SizedBox(width: 12),
                   SkeletonBox(width: 180, height: 14),
@@ -495,17 +495,17 @@ class SkeletonNotifications extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         itemCount: count,
         separatorBuilder: (_, __) => const Divider(height: 1),
-        itemBuilder: (_, __) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        itemBuilder: (_, __) => const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SkeletonBox(width: 40, height: 40, borderRadius: 20),
-              const SizedBox(width: 12),
+              SkeletonBox(width: 40, height: 40, borderRadius: 20),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     SkeletonBox(height: 14),
                     SizedBox(height: 6),
                     SkeletonBox(width: 160, height: 12),
@@ -550,7 +550,7 @@ class SkeletonEditListing extends StatelessWidget {
             const SkeletonBox(height: 48, borderRadius: 12),
             const SizedBox(height: 16),
             // Dropdowns row
-            Row(children: const [
+            const Row(children: [
               Expanded(child: SkeletonBox(height: 48, borderRadius: 12)),
               SizedBox(width: 12),
               Expanded(child: SkeletonBox(height: 48, borderRadius: 12)),
@@ -559,9 +559,9 @@ class SkeletonEditListing extends StatelessWidget {
             // Images
             const SkeletonBox(width: 100, height: 14),
             const SizedBox(height: 8),
-            Row(children: List.generate(3, (_) => Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: const SkeletonBox(width: 80, height: 80, borderRadius: 8),
+            Row(children: List.generate(3, (_) => const Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: SkeletonBox(width: 80, height: 80, borderRadius: 8),
             ))),
             const SizedBox(height: 24),
             // Button

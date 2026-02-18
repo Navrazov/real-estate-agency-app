@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/api/api_client.dart';
@@ -140,8 +141,11 @@ class _LoginScreenState extends State<LoginScreen> {
   int _cooldown = 0;
   Timer? _cooldownTimer;
   bool _phoneHidden = false;
+  DateTime? _birthDate;
   Uint8List? _avatarBytes;
   String? _avatarFileName;
+  bool _telegramLoading = false;
+  Timer? _telegramPollTimer;
 
   final _picker = ImagePicker();
   final _apiClient = ApiClient();
@@ -151,6 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _cooldownTimer?.cancel();
+    _telegramPollTimer?.cancel();
     _identifierCtrl.dispose();
     _passCtrl.dispose();
     _phoneCtrl.dispose();
@@ -330,6 +335,99 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // ── Telegram auth ──
+
+  Future<void> _loginViaTelegram() async {
+    setState(() {
+      _telegramLoading = true;
+      _error = null;
+    });
+    try {
+      final auth = AuthServiceScope.of(context);
+      final result = await auth.telegramInit();
+      final nonce = result['nonce']!;
+      final botUrl = result['botUrl']!;
+
+      final uri = Uri.parse(botUrl);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        if (mounted) {
+          setState(() {
+            _telegramLoading = false;
+            _error = 'Не удалось открыть Telegram. Убедитесь, что приложение установлено.';
+          });
+        }
+        return;
+      }
+
+      // Poll for auth completion (max 150 attempts = ~5 min)
+      int pollAttempts = 0;
+      _telegramPollTimer?.cancel();
+      _telegramPollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        pollAttempts++;
+        if (pollAttempts > 150) {
+          timer.cancel();
+          if (mounted) {
+            setState(() {
+              _telegramLoading = false;
+              _error = 'Время ожидания истекло. Попробуйте ещё раз.';
+            });
+          }
+          return;
+        }
+        try {
+          final done = await auth.telegramCheck(nonce);
+          if (done) {
+            timer.cancel();
+            if (mounted) {
+              setState(() => _telegramLoading = false);
+              context.go('/');
+            }
+          }
+        } catch (_) {
+          timer.cancel();
+          if (mounted) {
+            setState(() {
+              _telegramLoading = false;
+              _error = 'Сессия авторизации через Telegram истекла';
+            });
+          }
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _telegramLoading = false;
+        });
+      }
+    }
+  }
+
+  // ── Birth date ──
+
+  Future<void> _pickBirthDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _birthDate ?? DateTime(now.year - 25),
+      firstDate: DateTime(1920),
+      lastDate: now,
+      locale: const Locale('ru'),
+    );
+    if (picked != null) {
+      setState(() => _birthDate = picked);
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+  }
+
   // ── Avatar ──
 
   Future<void> _pickAvatar() async {
@@ -423,6 +521,7 @@ class _LoginScreenState extends State<LoginScreen> {
           firstName: _firstNameCtrl.text.trim(),
           lastName: _lastNameCtrl.text.trim(),
           phoneHidden: _phoneHidden,
+          birthDate: _birthDate,
         );
         // Upload avatar after registration (now we have a token)
         try {
@@ -567,6 +666,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // Action buttons
                     ..._buildActionButtons(),
+
+                    if (_mode == 'login' || _mode == 'register' && _regStep == 1) ...[
+                      const SizedBox(height: 16),
+                      _buildTelegramButton(),
+                    ],
 
                     const SizedBox(height: 16),
 
@@ -810,6 +914,53 @@ class _LoginScreenState extends State<LoginScreen> {
     ];
   }
 
+  Widget _buildTelegramButton() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: Divider(color: context.appColors.border)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'или',
+                style: TextStyle(color: context.appColors.textSecondary, fontSize: 13),
+              ),
+            ),
+            Expanded(child: Divider(color: context.appColors.border)),
+          ],
+        ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: (_loading || _telegramLoading) ? null : _loginViaTelegram,
+          icon: _telegramLoading
+              ? SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: context.appColors.primary,
+                  ),
+                )
+              : const Icon(Icons.telegram, size: 20),
+          label: Text(_telegramLoading ? 'Ожидание...' : 'Войти через Telegram'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(52),
+          ),
+        ),
+        if (_telegramLoading)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Откройте Telegram и нажмите "Start" в боте',
+              style: TextStyle(color: context.appColors.textSecondary, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
+    );
+  }
+
   /// Registration Step 1: Phone number + verification code
   List<Widget> _buildRegisterStep1() {
     final cooldownDisabled = _cooldown > 0 || _sendingCode;
@@ -906,6 +1057,30 @@ class _LoginScreenState extends State<LoginScreen> {
           if (v == null || v.trim().isEmpty) return 'Введите фамилию';
           return null;
         },
+      ),
+      const SizedBox(height: 16),
+
+      // Birth date (optional)
+      GestureDetector(
+        onTap: _loading ? null : _pickBirthDate,
+        child: AbsorbPointer(
+          child: TextFormField(
+            decoration: InputDecoration(
+              labelText: 'Дата рождения (необязательно)',
+              prefixIcon: const Icon(Icons.cake_outlined),
+              hintText: 'дд.мм.гггг',
+              suffixIcon: _birthDate != null
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => setState(() => _birthDate = null),
+                    )
+                  : null,
+            ),
+            controller: TextEditingController(
+              text: _birthDate != null ? _formatDate(_birthDate!) : '',
+            ),
+          ),
+        ),
       ),
       const SizedBox(height: 20),
 

@@ -54,7 +54,9 @@ class ApiClient {
     final request = http.MultipartRequest('POST', uri);
     final token = await getToken();
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
-    for (final f in files) request.files.add(f);
+    for (final f in files) {
+      request.files.add(f);
+    }
     final streamed = await request.send();
     final res = await http.Response.fromStream(streamed);
     final data = jsonDecode(res.body) as Map<String, dynamic>?;

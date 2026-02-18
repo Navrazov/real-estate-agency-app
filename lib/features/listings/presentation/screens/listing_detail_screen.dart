@@ -542,7 +542,7 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                       if (_listing!.area != null)
                                         _FeatureItem(
                                           icon: Icons.square_foot,
-                                          value: '${_listing!.area!.toStringAsFixed(0)}',
+                                          value: _listing!.area!.toStringAsFixed(0),
                                           label: 'м²',
                                         ),
                                       if (_listing!.floor != null)

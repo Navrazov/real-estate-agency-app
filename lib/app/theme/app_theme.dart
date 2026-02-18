@@ -338,11 +338,11 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColorsDark.primary, width: 2),
+          borderSide: const BorderSide(color: AppColorsDark.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColorsDark.error),
+          borderSide: const BorderSide(color: AppColorsDark.error),
         ),
         hintStyle: const TextStyle(color: AppColorsDark.textMuted),
         labelStyle: const TextStyle(color: AppColorsDark.textSecondary),

@@ -470,6 +470,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
 
+          // --- Birth Date ---
+          _sectionTitle('Дата рождения'),
+          const SizedBox(height: 8),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: _buildBirthDateSection(user),
+            ),
+          ),
+          const SizedBox(height: 24),
+
           // --- Phone ---
           _sectionTitle('Телефон'),
           const SizedBox(height: 8),
@@ -621,6 +632,79 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: const Text('Отмена'),
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  // ── Birth Date section ──
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+  }
+
+  Widget _buildBirthDateSection(User? user) {
+    final birthDate = user?.birthDate;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.cake_outlined, color: context.appColors.textSecondary, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                birthDate != null ? _formatDate(birthDate) : 'Не указана',
+                style: TextStyle(fontSize: 16, color: birthDate != null ? null : context.appColors.textSecondary),
+              ),
+            ),
+            if (birthDate != null)
+              IconButton(
+                icon: Icon(Icons.clear, size: 18, color: context.appColors.textMuted),
+                onPressed: () async {
+                  try {
+                    await _apiClient.patch<Map<String, dynamic>>(
+                      '/users/me',
+                      {'birthDate': null},
+                      (d) => d as Map<String, dynamic>,
+                    );
+                    if (mounted) await AuthServiceScope.of(context).reloadUser();
+                  } catch (e) {
+                    if (mounted) _showSnackBar('Ошибка: $e');
+                  }
+                },
+                tooltip: 'Удалить дату рождения',
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () async {
+            final now = DateTime.now();
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: birthDate ?? DateTime(now.year - 25),
+              firstDate: DateTime(1920),
+              lastDate: now,
+              locale: const Locale('ru'),
+            );
+            if (picked == null) return;
+            try {
+              await _apiClient.patch<Map<String, dynamic>>(
+                '/users/me',
+                {'birthDate': picked.toIso8601String()},
+                (d) => d as Map<String, dynamic>,
+              );
+              if (mounted) {
+                await AuthServiceScope.of(context).reloadUser();
+                _showSnackBar('Дата рождения обновлена');
+              }
+            } catch (e) {
+              if (mounted) _showSnackBar('Ошибка: $e');
+            }
+          },
+          icon: const Icon(Icons.calendar_today_outlined, size: 18),
+          label: Text(birthDate != null ? 'Изменить' : 'Указать дату рождения'),
         ),
       ],
     );
