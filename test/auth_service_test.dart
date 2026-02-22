@@ -35,14 +35,14 @@ void main() {
       expect(user.displayName, 'John');
     });
 
-    test('displayName returns email prefix when name is null', () {
-      final user = User(id: '1', role: 'user');
-      expect(user.displayName, 'john');
+    test('displayName returns phone when name is null', () {
+      final user = User(id: '1', role: 'user', phone: '+79991234567');
+      expect(user.displayName, '+79991234567');
     });
 
-    test('displayName returns email prefix for complex emails', () {
+    test('displayName returns default label when no name and no phone', () {
       final user = User(id: '1', role: 'user');
-      expect(user.displayName, 'john.doe');
+      expect(user.displayName, 'Пользователь');
     });
 
     test('isAdmin returns true for admin role', () {
