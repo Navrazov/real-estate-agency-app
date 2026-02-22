@@ -126,6 +126,91 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         )} ₽';
   }
 
+  String _formatDateRu(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '-';
+    final value = raw.trim();
+    final dt = DateTime.tryParse(value);
+    if (dt != null) {
+      final d = dt.toLocal();
+      final dd = d.day.toString().padLeft(2, '0');
+      final mm = d.month.toString().padLeft(2, '0');
+      return '$dd.$mm.${d.year}';
+    }
+    final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
+    if (m != null) {
+      return '${m.group(3)}.${m.group(2)}.${m.group(1)}';
+    }
+    return value;
+  }
+
+  Future<void> _openImageViewer(List<String> images, int initialIndex) async {
+    final pageController = PageController(initialPage: initialIndex);
+    var currentIndex = initialIndex;
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Scaffold(
+              backgroundColor: Colors.black,
+              body: SafeArea(
+                child: Stack(
+                  children: [
+                    PageView.builder(
+                      controller: pageController,
+                      itemCount: images.length,
+                      onPageChanged: (index) =>
+                          setModalState(() => currentIndex = index),
+                      itemBuilder: (_, i) => InteractiveViewer(
+                        minScale: 1,
+                        maxScale: 4,
+                        child: Center(
+                          child: CachedNetworkImage(
+                            imageUrl: images[i],
+                            fit: BoxFit.contain,
+                            errorWidget: (_, __, ___) => const Center(
+                              child: Text('Ошибка загрузки',
+                                  style: TextStyle(color: Colors.white70)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: IconButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ),
+                    if (images.length > 1)
+                      Positioned(
+                        bottom: 20,
+                        left: 0,
+                        right: 0,
+                        child: Text(
+                          '${currentIndex + 1} / ${images.length}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    pageController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = AuthServiceScope.of(context);
@@ -288,26 +373,31 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                             onPageChanged: (i) =>
                                                 setState(() => _imageIndex = i),
                                             itemBuilder: (context, i) {
-                                              final image = CachedNetworkImage(
-                                                imageUrl: images[i],
-                                                fit: BoxFit.cover,
-                                                placeholder: (_, __) =>
-                                                    Container(
-                                                  color:
-                                                      context.appColors.surface,
-                                                  child: const Center(
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                              strokeWidth: 2)),
-                                                ),
-                                                errorWidget: (_, __, ___) =>
-                                                    Container(
-                                                  color:
-                                                      context.appColors.surface,
-                                                  child: const Center(
-                                                    child: Text('🏠',
-                                                        style: TextStyle(
-                                                            fontSize: 64)),
+                                              final image = GestureDetector(
+                                                onTap: () =>
+                                                    _openImageViewer(images, i),
+                                                child: CachedNetworkImage(
+                                                  imageUrl: images[i],
+                                                  fit: BoxFit.cover,
+                                                  placeholder: (_, __) =>
+                                                      Container(
+                                                    color: context
+                                                        .appColors.surface,
+                                                    child: const Center(
+                                                        child:
+                                                            CircularProgressIndicator(
+                                                                strokeWidth:
+                                                                    2)),
+                                                  ),
+                                                  errorWidget: (_, __, ___) =>
+                                                      Container(
+                                                    color: context
+                                                        .appColors.surface,
+                                                    child: const Center(
+                                                      child: Text('🏠',
+                                                          style: TextStyle(
+                                                              fontSize: 64)),
+                                                    ),
                                                   ),
                                                 ),
                                               );
@@ -566,7 +656,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                                 _listing!.dduDate!.isNotEmpty)
                                               _InfoRow(
                                                   label: 'Дата ДДУ',
-                                                  value: _listing!.dduDate!),
+                                                  value: _formatDateRu(
+                                                      _listing!.dduDate)),
                                             if (_listing!
                                                     .assignmentOriginalPrice !=
                                                 null)
@@ -580,8 +671,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                                                     .completionDate!.isNotEmpty)
                                               _InfoRow(
                                                   label: 'Дата сдачи',
-                                                  value: _listing!
-                                                      .completionDate!),
+                                                  value: _formatDateRu(_listing!
+                                                      .completionDate)),
                                           ],
                                         ),
                                       ),

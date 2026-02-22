@@ -233,20 +233,28 @@ class _ListingsScreenState extends State<ListingsScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            onPressed: () => context.push('/agents'),
-            icon: const Icon(Icons.people_outline),
-            tooltip: 'Агенты',
-          ),
-          IconButton(
-            onPressed: () => ThemeServiceScope.of(context).toggleTheme(),
-            icon: Icon(
-              ThemeServiceScope.of(context).isDark
-                  ? Icons.light_mode_outlined
-                  : Icons.dark_mode_outlined,
+          if (isFullscreenMap)
+            IconButton(
+              onPressed: () => setState(() => _viewMode = _ViewMode.list),
+              icon: const Icon(Icons.view_list),
+              tooltip: 'Список',
+            )
+          else ...[
+            IconButton(
+              onPressed: () => context.push('/agents'),
+              icon: const Icon(Icons.people_outline),
+              tooltip: 'Агенты',
             ),
-            tooltip: 'Сменить тему',
-          ),
+            IconButton(
+              onPressed: () => ThemeServiceScope.of(context).toggleTheme(),
+              icon: Icon(
+                ThemeServiceScope.of(context).isDark
+                    ? Icons.light_mode_outlined
+                    : Icons.dark_mode_outlined,
+              ),
+              tooltip: 'Сменить тему',
+            ),
+          ],
         ],
       ),
       body: isFullscreenMap
@@ -325,8 +333,20 @@ class _ListingsScreenState extends State<ListingsScreen> {
                                   icon: Icon(Icons.map, size: 18)),
                             ],
                             selected: {_viewMode},
-                            onSelectionChanged: (s) =>
-                                setState(() => _viewMode = s.first),
+                            onSelectionChanged: (s) {
+                              final nextMode = s.first;
+                              if (nextMode == _viewMode) return;
+                              if (nextMode == _ViewMode.map) {
+                                setState(() {
+                                  _viewMode = nextMode;
+                                  _selectedId = null;
+                                  _page = 1;
+                                });
+                                _load();
+                                return;
+                              }
+                              setState(() => _viewMode = nextMode);
+                            },
                             showSelectedIcon: false,
                           ),
                         ],
@@ -395,9 +415,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
     final bottomHeight =
         MediaQuery.of(context).size.height < 720 ? 112.0 : 140.0;
 
-    return Stack(
+    return Column(
       children: [
-        Positioned.fill(
+        Expanded(
           child: ListingsMap(
             markers: markers,
             selectedId: _selectedId,
@@ -405,151 +425,123 @@ class _ListingsScreenState extends State<ListingsScreen> {
             height: double.infinity,
           ),
         ),
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                FilledButton.icon(
-                  onPressed: () => setState(() => _viewMode = _ViewMode.list),
-                  icon: const Icon(Icons.view_list, size: 18),
-                  label: const Text('Список'),
-                ),
-              ],
-            ),
-          ),
-        ),
         if (listings.isNotEmpty)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SizedBox(
-              height: bottomHeight,
-              child: ListView.builder(
-                controller: _mapCardsController,
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.all(12),
-                itemCount: listings.length,
-                itemBuilder: (context, i) {
-                  final l = listings[i];
-                  final isSelected = l.id == _selectedId;
-                  return Container(
-                    width: 200,
-                    margin: const EdgeInsets.only(right: 12),
-                    child: Card(
-                      elevation: isSelected ? 5 : 0,
-                      shadowColor: isSelected
-                          ? context.appColors.primary.withValues(alpha: 0.25)
-                          : null,
-                      color: isSelected
-                          ? context.appColors.primary.withValues(alpha: 0.12)
-                          : null,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(
-                          color: isSelected
-                              ? context.appColors.primary
-                              : context.appColors.border,
-                          width: isSelected ? 1.6 : 1,
-                        ),
+          SizedBox(
+            height: bottomHeight,
+            child: ListView.builder(
+              controller: _mapCardsController,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.all(12),
+              itemCount: listings.length,
+              itemBuilder: (context, i) {
+                final l = listings[i];
+                final isSelected = l.id == _selectedId;
+                return Container(
+                  width: 200,
+                  margin: const EdgeInsets.only(right: 12),
+                  child: Card(
+                    elevation: isSelected ? 10 : 2,
+                    shadowColor: isSelected
+                        ? Colors.black.withValues(alpha: 0.28)
+                        : Colors.black.withValues(alpha: 0.08),
+                    color: context.appColors.surfaceWhite,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color: isSelected
+                            ? context.appColors.primary
+                            : context.appColors.border,
+                        width: isSelected ? 2.2 : 1,
                       ),
-                      child: InkWell(
-                        onTap: () => context.push('/listing/${l.id}'),
-                        borderRadius: BorderRadius.circular(16),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: l.images.isNotEmpty
-                                    ? CachedNetworkImage(
-                                        imageUrl: l.images.first,
+                    ),
+                    child: InkWell(
+                      onTap: () => context.push('/listing/${l.id}'),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: l.images.isNotEmpty
+                                  ? CachedNetworkImage(
+                                      imageUrl: l.images.first,
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                      placeholder: (_, __) => Container(
                                         width: 60,
                                         height: 60,
-                                        fit: BoxFit.cover,
-                                        placeholder: (_, __) => Container(
-                                          width: 60,
-                                          height: 60,
-                                          color: context.appColors.surface,
-                                        ),
-                                        errorWidget: (_, __, ___) => Container(
-                                          width: 60,
-                                          height: 60,
-                                          color: context.appColors.surface,
-                                          child:
-                                              const Center(child: Text('🏠')),
-                                        ),
-                                      )
-                                    : Container(
+                                        color: context.appColors.surface,
+                                      ),
+                                      errorWidget: (_, __, ___) => Container(
                                         width: 60,
                                         height: 60,
                                         color: context.appColors.surface,
                                         child: const Center(child: Text('🏠')),
                                       ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
+                                    )
+                                  : Container(
+                                      width: 60,
+                                      height: 60,
+                                      color: context.appColors.surface,
+                                      child: const Center(child: Text('🏠')),
+                                    ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    l.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (l.paymentType == PaymentType.installment)
                                     Text(
-                                      l.title,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
+                                      'Первый взнос',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          color: context.appColors.accent,
                                           fontWeight: FontWeight.w600),
                                     ),
-                                    const SizedBox(height: 4),
-                                    if (l.paymentType ==
-                                        PaymentType.installment)
-                                      Text(
-                                        'Первый взнос',
-                                        style: TextStyle(
-                                            fontSize: 10,
-                                            color: context.appColors.accent,
-                                            fontWeight: FontWeight.w600),
-                                      ),
-                                    Text(
-                                      _formatPrice(l.price),
-                                      style: TextStyle(
-                                        color: context.appColors.primary,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  Text(
+                                    _formatPrice(l.price),
+                                    style: TextStyle(
+                                      color: context.appColors.primary,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           )
         else
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 16,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.appColors.surfaceWhite,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.appColors.border),
-              ),
-              child: Text(
-                'В этой области нет объявлений',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: context.appColors.textSecondary),
-              ),
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: context.appColors.surfaceWhite,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: context.appColors.border),
+            ),
+            child: Text(
+              'В этой области нет объявлений',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: context.appColors.textSecondary),
             ),
           ),
       ],
@@ -1088,20 +1080,20 @@ class _ListingsScreenState extends State<ListingsScreen> {
                   width: 200,
                   margin: const EdgeInsets.only(right: 12),
                   child: Card(
-                    elevation: isSelected ? 5 : 0,
+                    elevation: isSelected ? 10 : 2,
                     shadowColor: isSelected
-                        ? context.appColors.primary.withValues(alpha: 0.25)
-                        : null,
+                        ? Colors.black.withValues(alpha: 0.28)
+                        : Colors.black.withValues(alpha: 0.08),
                     color: isSelected
-                        ? context.appColors.primary.withValues(alpha: 0.12)
-                        : null,
+                        ? context.appColors.surfaceWhite
+                        : context.appColors.surfaceWhite,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                       side: BorderSide(
                         color: isSelected
                             ? context.appColors.primary
                             : context.appColors.border,
-                        width: isSelected ? 1.6 : 1,
+                        width: isSelected ? 2.2 : 1,
                       ),
                     ),
                     child: InkWell(

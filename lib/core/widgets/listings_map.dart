@@ -175,6 +175,34 @@ class _ListingsMapState extends State<ListingsMap> {
         clusterer.add(placemarks);
         map.geoObjects.add(clusterer);
 
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+        function applyRestrictArea() {
+          if (!markers.length) return;
+          let minLat = markers[0].lat, maxLat = markers[0].lat;
+          let minLng = markers[0].lng, maxLng = markers[0].lng;
+          for (let i = 1; i < markers.length; i++) {
+            const m = markers[i];
+            minLat = Math.min(minLat, m.lat);
+            maxLat = Math.max(maxLat, m.lat);
+            minLng = Math.min(minLng, m.lng);
+            maxLng = Math.max(maxLng, m.lng);
+          }
+          if (markers.length === 1) {
+            const span = 0.06;
+            minLat -= span; maxLat += span; minLng -= span; maxLng += span;
+          } else {
+            const latPad = Math.max((maxLat - minLat) * 0.06, 0.06);
+            const lngPad = Math.max((maxLng - minLng) * 0.06, 0.06);
+            minLat -= latPad; maxLat += latPad; minLng -= lngPad; maxLng += lngPad;
+          }
+          minLat = clamp(minLat, -85, 85);
+          maxLat = clamp(maxLat, -85, 85);
+          minLng = clamp(minLng, -180, 180);
+          maxLng = clamp(maxLng, -180, 180);
+          try { map.options.set('restrictMapArea', [[minLat, minLng], [maxLat, maxLng]]); } catch (e) {}
+        }
+        applyRestrictArea();
+
         if (placemarks.length === 1) {
           const coords = placemarks[0].geometry.getCoordinates();
           map.setCenter(coords, Math.max(map.getZoom(), 12), { duration: 120 });
@@ -220,7 +248,7 @@ class _ListingsMapState extends State<ListingsMap> {
             : const Center(
                 child: Text('Карта доступна только на iOS/Android/Web'));
     if (widget.height == double.infinity) {
-      return map;
+      return SizedBox.expand(child: map);
     }
 
     return SizedBox(height: widget.height, child: map);
@@ -285,6 +313,33 @@ class _ListingsMapState extends State<ListingsMap> {
         });
         clusterer.add(placemarks);
         map.geoObjects.add(clusterer);
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+        function applyRestrictArea() {
+          if (!markers.length) return;
+          let minLat = markers[0].lat, maxLat = markers[0].lat;
+          let minLng = markers[0].lng, maxLng = markers[0].lng;
+          for (let i = 1; i < markers.length; i++) {
+            const m = markers[i];
+            minLat = Math.min(minLat, m.lat);
+            maxLat = Math.max(maxLat, m.lat);
+            minLng = Math.min(minLng, m.lng);
+            maxLng = Math.max(maxLng, m.lng);
+          }
+          if (markers.length === 1) {
+            const span = 0.06;
+            minLat -= span; maxLat += span; minLng -= span; maxLng += span;
+          } else {
+            const latPad = Math.max((maxLat - minLat) * 0.06, 0.06);
+            const lngPad = Math.max((maxLng - minLng) * 0.06, 0.06);
+            minLat -= latPad; maxLat += latPad; minLng -= lngPad; maxLng += lngPad;
+          }
+          minLat = clamp(minLat, -85, 85);
+          maxLat = clamp(maxLat, -85, 85);
+          minLng = clamp(minLng, -180, 180);
+          maxLng = clamp(maxLng, -180, 180);
+          try { map.options.set('restrictMapArea', [[minLat, minLng], [maxLat, maxLng]]); } catch (e) {}
+        }
+        applyRestrictArea();
         if (placemarks.length === 1) {
           const coords = placemarks[0].geometry.getCoordinates();
           map.setCenter(coords, Math.max(map.getZoom(), 12), { duration: 120 });
