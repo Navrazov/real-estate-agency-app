@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
 import '../../../../core/api/api_client.dart';
@@ -54,8 +53,10 @@ class _PhoneInputFormatter extends TextInputFormatter {
     }
 
     // Track cursor: count subscriber digits before cursor in the raw new text
-    final cursorPos = newValue.selection.baseOffset.clamp(0, newValue.text.length);
-    int subDigitsBefore = _countSubscriberDigitsBefore(newValue.text, cursorPos);
+    final cursorPos =
+        newValue.selection.baseOffset.clamp(0, newValue.text.length);
+    int subDigitsBefore =
+        _countSubscriberDigitsBefore(newValue.text, cursorPos);
     subDigitsBefore = subDigitsBefore.clamp(0, digits.length);
 
     // Find the corresponding position in the formatted string
@@ -93,7 +94,10 @@ class _PhoneInputFormatter extends TextInputFormatter {
     for (int i = 0; i < formatted.length; i++) {
       final c = formatted.codeUnitAt(i);
       if (c >= 48 && c <= 57) {
-        if (!prefixSkipped) { prefixSkipped = true; continue; }
+        if (!prefixSkipped) {
+          prefixSkipped = true;
+          continue;
+        }
         count++;
         if (count == n) return i + 1;
       }
@@ -137,15 +141,13 @@ class _LoginScreenState extends State<LoginScreen> {
   int _regStep = 1; // 1 = phone verification, 2 = personal info
   int _forgotStep = 1; // 1 = phone verification, 2 = new password
   String? _error;
-  String? _codeMethod; // 'call' or 'telegram'
+  String? _codeMethod;
   int _cooldown = 0;
   Timer? _cooldownTimer;
   bool _phoneHidden = false;
   DateTime? _birthDate;
   Uint8List? _avatarBytes;
   String? _avatarFileName;
-  bool _telegramLoading = false;
-  Timer? _telegramPollTimer;
 
   final _picker = ImagePicker();
   final _apiClient = ApiClient();
@@ -155,7 +157,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _cooldownTimer?.cancel();
-    _telegramPollTimer?.cancel();
     _identifierCtrl.dispose();
     _passCtrl.dispose();
     _phoneCtrl.dispose();
@@ -206,8 +207,8 @@ class _LoginScreenState extends State<LoginScreen> {
       _codeSent = false;
       _regStep = 1;
       _forgotStep = 1;
-      _codeMethod = null;
       _cooldown = 0;
+      _codeMethod = null;
       _cooldownTimer?.cancel();
       _codeCtrl.clear();
       _phoneCtrl.clear();
@@ -236,8 +237,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() {
           _codeSent = true;
-          _sendingCode = false;
           _codeMethod = method;
+          _sendingCode = false;
         });
         _startCooldown();
       }
@@ -271,8 +272,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() {
           _codeSent = true;
-          _sendingCode = false;
           _codeMethod = method;
+          _sendingCode = false;
         });
         _startCooldown();
       }
@@ -327,84 +328,10 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) context.go('/');
     } catch (e) {
       if (mounted) {
-        setState(
-            () => _error = e.toString().replaceFirst('Exception: ', ''));
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  // ── Telegram auth ──
-
-  Future<void> _loginViaTelegram() async {
-    setState(() {
-      _telegramLoading = true;
-      _error = null;
-    });
-    try {
-      final auth = AuthServiceScope.of(context);
-      final result = await auth.telegramInit();
-      final nonce = result['nonce']!;
-      final botUrl = result['botUrl']!;
-
-      final uri = Uri.parse(botUrl);
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!launched) {
-        if (mounted) {
-          setState(() {
-            _telegramLoading = false;
-            _error = 'Не удалось открыть Telegram. Убедитесь, что приложение установлено.';
-          });
-        }
-        return;
-      }
-
-      // Poll for auth completion (max 150 attempts = ~5 min)
-      int pollAttempts = 0;
-      _telegramPollTimer?.cancel();
-      _telegramPollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-        pollAttempts++;
-        if (pollAttempts > 150) {
-          timer.cancel();
-          if (mounted) {
-            setState(() {
-              _telegramLoading = false;
-              _error = 'Время ожидания истекло. Попробуйте ещё раз.';
-            });
-          }
-          return;
-        }
-        try {
-          final done = await auth.telegramCheck(nonce);
-          if (done) {
-            timer.cancel();
-            if (mounted) {
-              setState(() => _telegramLoading = false);
-              context.go('/');
-            }
-          }
-        } catch (_) {
-          timer.cancel();
-          if (mounted) {
-            setState(() {
-              _telegramLoading = false;
-              _error = 'Сессия авторизации через Telegram истекла';
-            });
-          }
-        }
-      });
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString().replaceFirst('Exception: ', '');
-          _telegramLoading = false;
-        });
-      }
     }
   }
 
@@ -535,8 +462,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) context.go('/');
     } catch (e) {
       if (mounted) {
-        setState(
-            () => _error = e.toString().replaceFirst('Exception: ', ''));
+        setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -551,8 +477,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ? 'Шаг 1: Подтверждение телефона'
           : 'Шаг 2: Личные данные';
     } else if (_mode == 'forgot') {
-      subtitle =
-          _forgotStep == 1 ? 'Восстановление пароля' : 'Новый пароль';
+      subtitle = _forgotStep == 1 ? 'Восстановление пароля' : 'Новый пароль';
     } else {
       subtitle = 'Войдите в аккаунт';
     }
@@ -602,12 +527,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 24),
                     Text(
                       'EstateHub',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
@@ -627,8 +550,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.all(12),
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color:
-                              context.appColors.error.withValues(alpha: 0.1),
+                          color: context.appColors.error.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                               color: context.appColors.error
@@ -642,8 +564,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             Expanded(
                               child: Text(
                                 _error!,
-                                style: TextStyle(
-                                    color: context.appColors.error),
+                                style:
+                                    TextStyle(color: context.appColors.error),
                               ),
                             ),
                           ],
@@ -666,11 +588,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     // Action buttons
                     ..._buildActionButtons(),
-
-                    if (_mode == 'login' || _mode == 'register' && _regStep == 1) ...[
-                      const SizedBox(height: 16),
-                      _buildTelegramButton(),
-                    ],
 
                     const SizedBox(height: 16),
 
@@ -731,10 +648,12 @@ class _LoginScreenState extends State<LoginScreen> {
         CheckboxListTile(
           value: _phoneHidden,
           onChanged: (val) => setState(() => _phoneHidden = val ?? false),
-          title: const Text('Скрыть мой номер телефона', style: TextStyle(fontSize: 14)),
+          title: const Text('Скрыть мой номер телефона',
+              style: TextStyle(fontSize: 14)),
           subtitle: Text(
             'Другие пользователи не смогут видеть ваш номер',
-            style: TextStyle(fontSize: 12, color: context.appColors.textSecondary),
+            style:
+                TextStyle(fontSize: 12, color: context.appColors.textSecondary),
           ),
           controlAffinity: ListTileControlAffinity.leading,
           contentPadding: EdgeInsets.zero,
@@ -842,10 +761,8 @@ class _LoginScreenState extends State<LoginScreen> {
         TextButton(
           onPressed: _loading
               ? null
-              : () => _switchMode(
-                  _mode == 'register' ? 'login' : 'register'),
-          child:
-              Text(_mode == 'register' ? 'Войти' : 'Регистрация'),
+              : () => _switchMode(_mode == 'register' ? 'login' : 'register'),
+          child: Text(_mode == 'register' ? 'Войти' : 'Регистрация'),
         ),
       ],
     );
@@ -912,53 +829,6 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     ];
-  }
-
-  Widget _buildTelegramButton() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(child: Divider(color: context.appColors.border)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'или',
-                style: TextStyle(color: context.appColors.textSecondary, fontSize: 13),
-              ),
-            ),
-            Expanded(child: Divider(color: context.appColors.border)),
-          ],
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: (_loading || _telegramLoading) ? null : _loginViaTelegram,
-          icon: _telegramLoading
-              ? SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: context.appColors.primary,
-                  ),
-                )
-              : const Icon(Icons.telegram, size: 20),
-          label: Text(_telegramLoading ? 'Ожидание...' : 'Войти через Telegram'),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
-          ),
-        ),
-        if (_telegramLoading)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'Откройте Telegram и нажмите "Start" в боте',
-              style: TextStyle(color: context.appColors.textSecondary, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-          ),
-      ],
-    );
   }
 
   /// Registration Step 1: Phone number + verification code
@@ -1090,8 +960,7 @@ class _LoginScreenState extends State<LoginScreen> {
           onTap: _loading ? null : _pickAvatar,
           child: CircleAvatar(
             radius: 40,
-            backgroundColor:
-                context.appColors.primary.withValues(alpha: 0.1),
+            backgroundColor: context.appColors.primary.withValues(alpha: 0.1),
             backgroundImage:
                 _avatarBytes != null ? MemoryImage(_avatarBytes!) : null,
             child: _avatarBytes == null
@@ -1105,8 +974,8 @@ class _LoginScreenState extends State<LoginScreen> {
       Center(
         child: Text(
           'Добавить фото (необязательно)',
-          style: TextStyle(
-              color: context.appColors.textSecondary, fontSize: 13),
+          style:
+              TextStyle(color: context.appColors.textSecondary, fontSize: 13),
         ),
       ),
     ];
@@ -1200,8 +1069,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ? Icons.visibility_outlined
                   : Icons.visibility_off_outlined,
             ),
-            onPressed: () => setState(() =>
-                _obscureForgotPassConfirm = !_obscureForgotPassConfirm),
+            onPressed: () => setState(
+                () => _obscureForgotPassConfirm = !_obscureForgotPassConfirm),
           ),
         ),
         obscureText: _obscureForgotPassConfirm,
@@ -1231,7 +1100,6 @@ class _LoginScreenState extends State<LoginScreen> {
       const SizedBox(height: 8),
       Row(
         children: [
-          // Call button
           Expanded(
             child: ElevatedButton.icon(
               onPressed: cooldownDisabled ? null : () => onSend('call'),
@@ -1250,23 +1118,19 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          // Telegram button
           Expanded(
-            child: OutlinedButton.icon(
-              onPressed:
-                  cooldownDisabled ? null : () => onSend('telegram'),
+            child: ElevatedButton.icon(
+              onPressed: cooldownDisabled ? null : () => onSend('telegram'),
               icon: _sendingCode
-                  ? SizedBox(
+                  ? const SizedBox(
                       height: 18,
                       width: 18,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: context.appColors.primary,
-                      ),
+                          strokeWidth: 2, color: Colors.white),
                     )
                   : const Icon(Icons.telegram, size: 18),
               label: const Text('Telegram'),
-              style: OutlinedButton.styleFrom(
+              style: ElevatedButton.styleFrom(
                 minimumSize: const Size(0, 48),
               ),
             ),
@@ -1307,9 +1171,7 @@ class _LoginScreenState extends State<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              _codeMethod == 'call'
-                  ? Icons.phone_callback
-                  : Icons.telegram,
+              _codeMethod == 'telegram' ? Icons.telegram : Icons.phone_callback,
               color: context.appColors.primary,
               size: 20,
             ),
@@ -1319,9 +1181,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _codeMethod == 'call'
-                        ? 'Вам поступит звонок'
-                        : 'Код отправлен в Telegram',
+                    _codeMethod == 'telegram'
+                        ? 'Код отправлен в Telegram'
+                        : 'Вам поступит звонок',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: context.appColors.primary,
@@ -1330,9 +1192,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _codeMethod == 'call'
-                        ? 'Введите последние 4 цифры номера, с которого поступит звонок. Если вы примете вызов, код будет озвучен.'
-                        : 'Проверьте сообщения в Telegram и введите полученный 4-значный код.',
+                    _codeMethod == 'telegram'
+                        ? 'Проверьте Telegram и введите 4-значный код из сообщения.'
+                        : 'Введите последние 4 цифры номера, с которого поступит звонок. Если вы примете вызов, код будет озвучен.',
                     style: TextStyle(
                       color: context.appColors.textSecondary,
                       fontSize: 12,
@@ -1381,24 +1243,15 @@ class _LoginScreenState extends State<LoginScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           TextButton(
-            onPressed:
-                cooldownDisabled ? null : () => onResend('call'),
+            onPressed: cooldownDisabled ? null : () => onResend('call'),
             style: TextButton.styleFrom(
               textStyle: const TextStyle(fontSize: 12),
               padding: const EdgeInsets.symmetric(horizontal: 8),
             ),
             child: const Text('Позвонить снова'),
           ),
-          Text(
-            '|',
-            style: TextStyle(
-              color: context.appColors.textSecondary
-                  .withValues(alpha: 0.5),
-            ),
-          ),
           TextButton(
-            onPressed:
-                cooldownDisabled ? null : () => onResend('telegram'),
+            onPressed: cooldownDisabled ? null : () => onResend('telegram'),
             style: TextButton.styleFrom(
               textStyle: const TextStyle(fontSize: 12),
               padding: const EdgeInsets.symmetric(horizontal: 8),
