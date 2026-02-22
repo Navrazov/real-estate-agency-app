@@ -153,9 +153,15 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
       final address = meta?['text'] as String?;
       if (address != null && mounted) {
         widget.onReverseGeocode?.call(address);
+      } else if (mounted) {
+        widget.onReverseGeocode
+            ?.call('${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}');
       }
     } catch (_) {
-      // ignore reverse-geocoding errors in picker
+      if (mounted) {
+        widget.onReverseGeocode
+            ?.call('${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}');
+      }
     }
   }
 
@@ -169,6 +175,11 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <style>
       html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; }
+      [class*="ymaps-2-1-"][class*="copyright"],
+      [class*="ymaps-2-1-"][class*="gototech"],
+      [class*="ymaps-2-1-"][class*="map-copyrights-promo"],
+      [class*="ymaps-2-1-"][class*="traffic"],
+      [class*="ymaps-2-1-"][class*="layers"] { display: none !important; }
     </style>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=$_yandexApiKey&lang=ru_RU" type="text/javascript"></script>
   </head>
@@ -277,7 +288,14 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <style>html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; }</style>
+    <style>
+      html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; }
+      [class*="ymaps-2-1-"][class*="copyright"],
+      [class*="ymaps-2-1-"][class*="gototech"],
+      [class*="ymaps-2-1-"][class*="map-copyrights-promo"],
+      [class*="ymaps-2-1-"][class*="traffic"],
+      [class*="ymaps-2-1-"][class*="layers"] { display: none !important; }
+    </style>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=$_yandexApiKey&lang=ru_RU" type="text/javascript"></script>
   </head>
   <body>

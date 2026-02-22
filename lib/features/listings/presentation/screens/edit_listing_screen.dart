@@ -77,7 +77,6 @@ class _EditListingScreenState extends State<EditListingScreen> {
   PaymentType _paymentType = PaymentType.cash;
   DealType _dealType = DealType.sale;
   List<String> _images = [];
-  String _city = '';
   String _address = '';
   double? _lat;
   double? _lng;
@@ -118,12 +117,6 @@ class _EditListingScreenState extends State<EditListingScreen> {
         _descriptionController.text = listing.description;
         _priceController.text = _formatNumber(listing.price.toStringAsFixed(0));
         _address = listing.address;
-        // Extract city from address (first part before comma)
-        final addrParts =
-            listing.address.split(',').map((s) => s.trim()).toList();
-        if (addrParts.length > 1) {
-          _city = addrParts[0];
-        }
         _roomsController.text = listing.rooms?.toString() ?? '';
         _areaController.text = listing.area?.toStringAsFixed(0) ?? '';
         _floorController.text = listing.floor?.toString() ?? '';
@@ -885,11 +878,9 @@ class _EditListingScreenState extends State<EditListingScreen> {
 
             // Address
             AddressPicker(
-              initialCity: _city,
               initialAddress: _address,
               enabled: !_saving,
               reverseAddress: _reverseAddress,
-              onCityChanged: (city) => _city = city,
               onAddressChanged: (addr) => _address = addr,
               onLocationSelected: (lat, lng) {
                 _lat = lat;
@@ -923,10 +914,6 @@ class _EditListingScreenState extends State<EditListingScreen> {
                     setState(() {
                       _reverseAddress = address;
                       _address = address;
-                      final parts = address.split(', ');
-                      if (parts.isNotEmpty) {
-                        _city = parts[0];
-                      }
                     });
                   },
                 ),

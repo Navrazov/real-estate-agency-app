@@ -95,7 +95,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
     final index = listings.indexWhere((l) => l.id == id);
     if (index < 0 || !_mapCardsController.hasClients) return;
     const itemWidthWithGap = 212.0;
-    final target = (index * itemWidthWithGap).clamp(0.0, _mapCardsController.position.maxScrollExtent);
+    final target = (index * itemWidthWithGap)
+        .clamp(0.0, _mapCardsController.position.maxScrollExtent);
     _mapCardsController.animateTo(
       target,
       duration: const Duration(milliseconds: 280),
@@ -107,7 +108,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
     return ListingsQuery(
       search: _searchCtrl.text.isNotEmpty ? _searchCtrl.text : null,
       propertyType: _propertyType,
-      apartmentType: _propertyType == PropertyType.apartment ? _apartmentType : null,
+      apartmentType:
+          _propertyType == PropertyType.apartment ? _apartmentType : null,
       paymentType: _paymentType,
       developer: _developer,
       complex: _complex,
@@ -178,7 +180,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
       setState(() {
         final index = _response!.items.indexWhere((l) => l.id == listing.id);
         if (index >= 0) {
-          _response!.items[index] = listing.copyWith(isFavorite: result['isFavorite'] as bool);
+          _response!.items[index] =
+              listing.copyWith(isFavorite: result['isFavorite'] as bool);
         }
       });
     } catch (e) {
@@ -251,7 +254,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: context.appColors.surfaceWhite,
-              border: Border(bottom: BorderSide(color: context.appColors.border)),
+              border:
+                  Border(bottom: BorderSide(color: context.appColors.border)),
             ),
             child: Column(
               children: [
@@ -274,7 +278,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
                                     },
                                   )
                                 : null,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                            contentPadding:
+                                const EdgeInsets.symmetric(horizontal: 12),
                           ),
                           onSubmitted: (_) => _applyFilters(),
                           style: const TextStyle(fontSize: 14),
@@ -285,24 +290,37 @@ class _ListingsScreenState extends State<ListingsScreen> {
                     SizedBox(
                       height: 42,
                       child: IconButton.filled(
-                        onPressed: () => setState(() => _showFilters = !_showFilters),
-                        icon: Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list, size: 20),
+                        onPressed: () =>
+                            setState(() => _showFilters = !_showFilters),
+                        icon: Icon(
+                            _showFilters
+                                ? Icons.filter_list_off
+                                : Icons.filter_list,
+                            size: 20),
                         style: IconButton.styleFrom(
                           backgroundColor: _showFilters
                               ? context.appColors.primary
-                              : context.appColors.primary.withValues(alpha: 0.1),
-                          foregroundColor: _showFilters ? Colors.white : context.appColors.primary,
+                              : context.appColors.primary
+                                  .withValues(alpha: 0.1),
+                          foregroundColor: _showFilters
+                              ? Colors.white
+                              : context.appColors.primary,
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     SegmentedButton<_ViewMode>(
                       segments: const [
-                        ButtonSegment(value: _ViewMode.list, icon: Icon(Icons.view_list, size: 18)),
-                        ButtonSegment(value: _ViewMode.map, icon: Icon(Icons.map, size: 18)),
+                        ButtonSegment(
+                            value: _ViewMode.list,
+                            icon: Icon(Icons.view_list, size: 18)),
+                        ButtonSegment(
+                            value: _ViewMode.map,
+                            icon: Icon(Icons.map, size: 18)),
                       ],
                       selected: {_viewMode},
-                      onSelectionChanged: (s) => setState(() => _viewMode = s.first),
+                      onSelectionChanged: (s) =>
+                          setState(() => _viewMode = s.first),
                       showSelectedIcon: false,
                     ),
                   ],
@@ -324,11 +342,14 @@ class _ListingsScreenState extends State<ListingsScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.error_outline, size: 48, color: context.appColors.error),
+                            Icon(Icons.error_outline,
+                                size: 48, color: context.appColors.error),
                             const SizedBox(height: 16),
                             Text(_error!, textAlign: TextAlign.center),
                             const SizedBox(height: 16),
-                            ElevatedButton(onPressed: _load, child: const Text('Повторить')),
+                            ElevatedButton(
+                                onPressed: _load,
+                                child: const Text('Повторить')),
                           ],
                         ),
                       )
@@ -370,7 +391,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
                     onTap: () {
                       setState(() {
                         _propertyType = type;
-                        if (type != PropertyType.apartment) _apartmentType = null;
+                        if (type != PropertyType.apartment)
+                          _apartmentType = null;
                       });
                       _applyFilters();
                     },
@@ -415,7 +437,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: Text('Оплата:', style: TextStyle(color: context.appColors.textSecondary, fontSize: 13)),
+                child: Text('Оплата:',
+                    style: TextStyle(
+                        color: context.appColors.textSecondary, fontSize: 13)),
               ),
               _FilterChip(
                 label: 'Любая',
@@ -448,18 +472,23 @@ class _ListingsScreenState extends State<ListingsScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Застройщик',
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 items: [
                   const DropdownMenuItem(value: null, child: Text('Все')),
-                  ..._filterOptions.developers.map((d) =>
-                    DropdownMenuItem(value: d, child: Text(d, overflow: TextOverflow.ellipsis)),
+                  ..._filterOptions.developers.map(
+                    (d) => DropdownMenuItem(
+                        value: d,
+                        child: Text(d, overflow: TextOverflow.ellipsis)),
                   ),
                 ],
-                onChanged: _filterOptions.developers.isEmpty ? null : (v) {
-                  setState(() => _developer = v);
-                  _applyFilters();
-                },
+                onChanged: _filterOptions.developers.isEmpty
+                    ? null
+                    : (v) {
+                        setState(() => _developer = v);
+                        _applyFilters();
+                      },
                 isExpanded: true,
               ),
             ),
@@ -471,18 +500,23 @@ class _ListingsScreenState extends State<ListingsScreen> {
                 decoration: const InputDecoration(
                   labelText: 'ЖК',
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 items: [
                   const DropdownMenuItem(value: null, child: Text('Все')),
-                  ..._filterOptions.complexes.map((c) =>
-                    DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis)),
+                  ..._filterOptions.complexes.map(
+                    (c) => DropdownMenuItem(
+                        value: c,
+                        child: Text(c, overflow: TextOverflow.ellipsis)),
                   ),
                 ],
-                onChanged: _filterOptions.complexes.isEmpty ? null : (v) {
-                  setState(() => _complex = v);
-                  _applyFilters();
-                },
+                onChanged: _filterOptions.complexes.isEmpty
+                    ? null
+                    : (v) {
+                        setState(() => _complex = v);
+                        _applyFilters();
+                      },
                 isExpanded: true,
               ),
             ),
@@ -496,7 +530,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
               child: TextField(
                 controller: _minPriceCtrl,
                 decoration: InputDecoration(
-                  labelText: _paymentType == PaymentType.installment ? 'Первый взнос от' : 'Цена от',
+                  labelText: _paymentType == PaymentType.installment
+                      ? 'Первый взнос от'
+                      : 'Цена от',
                   prefixIcon: const Icon(Icons.attach_money),
                 ),
                 keyboardType: TextInputType.number,
@@ -508,7 +544,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
               child: TextField(
                 controller: _maxPriceCtrl,
                 decoration: InputDecoration(
-                  labelText: _paymentType == PaymentType.installment ? 'Первый взнос до' : 'Цена до',
+                  labelText: _paymentType == PaymentType.installment
+                      ? 'Первый взнос до'
+                      : 'Цена до',
                   prefixIcon: const Icon(Icons.attach_money),
                 ),
                 keyboardType: TextInputType.number,
@@ -573,7 +611,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
         const SizedBox(height: 12),
         Row(
           children: [
-            Text('Сортировка:', style: TextStyle(color: context.appColors.textSecondary)),
+            Text('Сортировка:',
+                style: TextStyle(color: context.appColors.textSecondary)),
             const SizedBox(width: 12),
             Expanded(
               child: SingleChildScrollView(
@@ -661,10 +700,13 @@ class _ListingsScreenState extends State<ListingsScreen> {
     final buttons = <Widget>[];
 
     if (start > 1) {
-      buttons.add(_PageButton(page: 1, current: current, onTap: () {
-        setState(() => _page = 1);
-        _load();
-      }));
+      buttons.add(_PageButton(
+          page: 1,
+          current: current,
+          onTap: () {
+            setState(() => _page = 1);
+            _load();
+          }));
       if (start > 2) {
         buttons.add(const Padding(
           padding: EdgeInsets.symmetric(horizontal: 4),
@@ -674,10 +716,13 @@ class _ListingsScreenState extends State<ListingsScreen> {
     }
 
     for (int i = start; i <= end; i++) {
-      buttons.add(_PageButton(page: i, current: current, onTap: () {
-        setState(() => _page = i);
-        _load();
-      }));
+      buttons.add(_PageButton(
+          page: i,
+          current: current,
+          onTap: () {
+            setState(() => _page = i);
+            _load();
+          }));
     }
 
     if (end < total) {
@@ -687,10 +732,13 @@ class _ListingsScreenState extends State<ListingsScreen> {
           child: Text('...'),
         ));
       }
-      buttons.add(_PageButton(page: total, current: current, onTap: () {
-        setState(() => _page = total);
-        _load();
-      }));
+      buttons.add(_PageButton(
+          page: total,
+          current: current,
+          onTap: () {
+            setState(() => _page = total);
+            _load();
+          }));
     }
 
     return buttons;
@@ -749,7 +797,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.appColors.primary.withValues(alpha: 0.2)),
+                  border: Border.all(
+                      color: context.appColors.primary.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   children: [
@@ -777,7 +826,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
           if (_response != null && _response!.totalPages > 1)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -820,7 +870,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
   }
 
   Widget _buildMapView(List<MapMarker> markers, List<Listing> listings) {
-    final bottomHeight = MediaQuery.of(context).size.height < 720 ? 112.0 : 140.0;
+    final bottomHeight =
+        MediaQuery.of(context).size.height < 720 ? 112.0 : 140.0;
     return Column(
       children: [
         Expanded(
@@ -846,8 +897,22 @@ class _ListingsScreenState extends State<ListingsScreen> {
                   width: 200,
                   margin: const EdgeInsets.only(right: 12),
                   child: Card(
-                    elevation: isSelected ? 4 : 0,
-                    color: isSelected ? context.appColors.primary.withValues(alpha: 0.05) : null,
+                    elevation: isSelected ? 5 : 0,
+                    shadowColor: isSelected
+                        ? context.appColors.primary.withValues(alpha: 0.25)
+                        : null,
+                    color: isSelected
+                        ? context.appColors.primary.withValues(alpha: 0.12)
+                        : null,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color: isSelected
+                            ? context.appColors.primary
+                            : context.appColors.border,
+                        width: isSelected ? 1.6 : 1,
+                      ),
+                    ),
                     child: InkWell(
                       onTap: () => context.push('/listing/${l.id}'),
                       borderRadius: BorderRadius.circular(16),
@@ -864,11 +929,13 @@ class _ListingsScreenState extends State<ListingsScreen> {
                                       height: 60,
                                       fit: BoxFit.cover,
                                       placeholder: (_, __) => Container(
-                                        width: 60, height: 60,
+                                        width: 60,
+                                        height: 60,
                                         color: context.appColors.surface,
                                       ),
                                       errorWidget: (_, __, ___) => Container(
-                                        width: 60, height: 60,
+                                        width: 60,
+                                        height: 60,
                                         color: context.appColors.surface,
                                         child: const Center(child: Text('🏠')),
                                       ),
@@ -890,13 +957,17 @@ class _ListingsScreenState extends State<ListingsScreen> {
                                     l.title,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600),
                                   ),
                                   const SizedBox(height: 4),
                                   if (l.paymentType == PaymentType.installment)
                                     Text(
                                       'Первый взнос',
-                                      style: TextStyle(fontSize: 10, color: context.appColors.accent, fontWeight: FontWeight.w600),
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          color: context.appColors.accent,
+                                          fontWeight: FontWeight.w600),
                                     ),
                                   Text(
                                     _formatPrice(l.price),
@@ -1001,9 +1072,11 @@ class _SortChip extends StatelessWidget {
             : null,
         label: Text(label),
         onPressed: onTap,
-        backgroundColor: selected ? context.appColors.primary.withValues(alpha: 0.1) : null,
+        backgroundColor:
+            selected ? context.appColors.primary.withValues(alpha: 0.1) : null,
         side: BorderSide(
-          color: selected ? context.appColors.primary : context.appColors.border,
+          color:
+              selected ? context.appColors.primary : context.appColors.border,
         ),
       ),
     );
@@ -1034,23 +1107,27 @@ class _CompactListingCard extends StatelessWidget {
             fit: BoxFit.cover,
             placeholder: (_, __) => Container(
               color: context.appColors.surface,
-              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2)),
             ),
             errorWidget: (_, __, ___) => Container(
               color: context.appColors.surface,
-              child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
+              child: const Center(
+                  child: Text('🏠', style: TextStyle(fontSize: 32))),
             ),
           )
         : Container(
             color: context.appColors.surface,
-            child: const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
+            child:
+                const Center(child: Text('🏠', style: TextStyle(fontSize: 32))),
           );
 
     return Container(
       decoration: BoxDecoration(
         color: context.appColors.surfaceWhite,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
+        border:
+            Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -1075,7 +1152,8 @@ class _CompactListingCard extends StatelessWidget {
                     fit: StackFit.expand,
                     children: [
                       ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(14)),
                         child: Hero(
                           tag: 'listing-image-${listing.id}',
                           child: imageWidget,
@@ -1093,7 +1171,8 @@ class _CompactListingCard extends StatelessWidget {
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
-                                color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
+                                color: context.appColors.surfaceWhite
+                                    .withValues(alpha: 0.9),
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
@@ -1103,9 +1182,13 @@ class _CompactListingCard extends StatelessWidget {
                                 ],
                               ),
                               child: Icon(
-                                listing.isFavorite ? Icons.favorite : Icons.favorite_border,
+                                listing.isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
                                 size: 16,
-                                color: listing.isFavorite ? const Color(0xFFE8788A) : context.appColors.textMuted,
+                                color: listing.isFavorite
+                                    ? const Color(0xFFE8788A)
+                                    : context.appColors.textMuted,
                               ),
                             ),
                           ),
@@ -1124,7 +1207,10 @@ class _CompactListingCard extends StatelessWidget {
                         if (listing.paymentType == PaymentType.installment)
                           Text(
                             'Первый взнос',
-                            style: TextStyle(fontSize: 10, color: context.appColors.accent, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: context.appColors.accent,
+                                fontWeight: FontWeight.w600),
                           ),
                         Text(
                           formatPrice(listing.price),
@@ -1154,8 +1240,10 @@ class _CompactListingCard extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 4),
                             child: Text(
                               [
-                                if (listing.rooms != null) '${listing.rooms} комн.',
-                                if (listing.area != null) '${listing.area!.toStringAsFixed(0)} м\u00B2',
+                                if (listing.rooms != null)
+                                  '${listing.rooms} комн.',
+                                if (listing.area != null)
+                                  '${listing.area!.toStringAsFixed(0)} м\u00B2',
                                 if (listing.floor != null)
                                   listing.totalFloors != null
                                       ? '${listing.floor}/${listing.totalFloors} эт.'
@@ -1172,7 +1260,8 @@ class _CompactListingCard extends StatelessWidget {
                         // Address
                         Row(
                           children: [
-                            Icon(Icons.location_on_outlined, size: 12, color: context.appColors.textMuted),
+                            Icon(Icons.location_on_outlined,
+                                size: 12, color: context.appColors.textMuted),
                             const SizedBox(width: 2),
                             Expanded(
                               child: Text(
@@ -1198,7 +1287,6 @@ class _CompactListingCard extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _SkeletonListingCard extends StatelessWidget {
@@ -1208,7 +1296,8 @@ class _SkeletonListingCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.appColors.surfaceWhite,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
+        border:
+            Border.all(color: context.appColors.border.withValues(alpha: 0.5)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Stack(
@@ -1228,11 +1317,26 @@ class _SkeletonListingCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(height: 14, width: 80, decoration: BoxDecoration(color: context.appColors.surface, borderRadius: BorderRadius.circular(4))),
+                      Container(
+                          height: 14,
+                          width: 80,
+                          decoration: BoxDecoration(
+                              color: context.appColors.surface,
+                              borderRadius: BorderRadius.circular(4))),
                       const SizedBox(height: 6),
-                      Container(height: 12, width: double.infinity, decoration: BoxDecoration(color: context.appColors.surface, borderRadius: BorderRadius.circular(4))),
+                      Container(
+                          height: 12,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                              color: context.appColors.surface,
+                              borderRadius: BorderRadius.circular(4))),
                       const SizedBox(height: 4),
-                      Container(height: 12, width: 100, decoration: BoxDecoration(color: context.appColors.surface, borderRadius: BorderRadius.circular(4))),
+                      Container(
+                          height: 12,
+                          width: 100,
+                          decoration: BoxDecoration(
+                              color: context.appColors.surface,
+                              borderRadius: BorderRadius.circular(4))),
                     ],
                   ),
                 ),
@@ -1247,7 +1351,8 @@ class _SkeletonListingCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Center(
-                child: Icon(Icons.lock_outline, size: 24, color: context.appColors.textMuted),
+                child: Icon(Icons.lock_outline,
+                    size: 24, color: context.appColors.textMuted),
               ),
             ),
           ),
@@ -1286,7 +1391,8 @@ class _PageButton extends StatelessWidget {
               child: Text(
                 '$page',
                 style: TextStyle(
-                  color: isActive ? Colors.white : context.appColors.textPrimary,
+                  color:
+                      isActive ? Colors.white : context.appColors.textPrimary,
                   fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                   fontSize: 14,
                 ),

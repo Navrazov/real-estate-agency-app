@@ -66,7 +66,6 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
   PaymentType _paymentType = PaymentType.cash;
   DealType _dealType = DealType.sale;
   final List<String> _imageUrls = [];
-  String _city = '';
   String _address = '';
   double? _lat;
   double? _lng;
@@ -839,7 +838,6 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             AddressPicker(
               enabled: !_loading,
               reverseAddress: _reverseAddress,
-              onCityChanged: (city) => _city = city,
               onAddressChanged: (addr) => _address = addr,
               onLocationSelected: (lat, lng) {
                 _lat = lat;
@@ -873,10 +871,6 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                     setState(() {
                       _reverseAddress = address;
                       _address = address;
-                      final parts = address.split(', ');
-                      if (parts.isNotEmpty) {
-                        _city = parts[0];
-                      }
                     });
                   },
                 ),
