@@ -119,7 +119,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
         _priceController.text = _formatNumber(listing.price.toStringAsFixed(0));
         _address = listing.address;
         // Extract city from address (first part before comma)
-        final addrParts = listing.address.split(',').map((s) => s.trim()).toList();
+        final addrParts =
+            listing.address.split(',').map((s) => s.trim()).toList();
         if (addrParts.length > 1) {
           _city = addrParts[0];
         }
@@ -131,10 +132,12 @@ class _EditListingScreenState extends State<EditListingScreen> {
         _status = listing.status;
         _paymentType = listing.paymentType;
         if (listing.installmentMonths != null) {
-          _installmentMonthsController.text = listing.installmentMonths.toString();
+          _installmentMonthsController.text =
+              listing.installmentMonths.toString();
         }
         if (listing.installmentMonthly != null) {
-          _installmentMonthlyController.text = _formatNumber(listing.installmentMonthly!.toStringAsFixed(0));
+          _installmentMonthlyController.text =
+              _formatNumber(listing.installmentMonthly!.toStringAsFixed(0));
         }
         _images = List.from(listing.images);
         _apartmentType = listing.apartmentType;
@@ -142,7 +145,11 @@ class _EditListingScreenState extends State<EditListingScreen> {
         _complexController.text = listing.complex ?? '';
         _dealType = listing.dealType;
         _dduNumberController.text = listing.dduNumber ?? '';
-        _assignmentOriginalPriceController.text = listing.assignmentOriginalPrice != null ? _formatNumber(listing.assignmentOriginalPrice!.toStringAsFixed(0)) : '';
+        _assignmentOriginalPriceController.text = listing
+                    .assignmentOriginalPrice !=
+                null
+            ? _formatNumber(listing.assignmentOriginalPrice!.toStringAsFixed(0))
+            : '';
         _completionDateController.text = listing.completionDate ?? '';
         _lat = listing.lat;
         _lng = listing.lng;
@@ -189,7 +196,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
 
     if (_paymentType == PaymentType.installment) {
       final months = int.tryParse(_installmentMonthsController.text);
-      final monthlyDigits = _installmentMonthlyController.text.replaceAll(RegExp(r'[^\d]'), '');
+      final monthlyDigits =
+          _installmentMonthlyController.text.replaceAll(RegExp(r'[^\d]'), '');
       final monthly = double.tryParse(monthlyDigits);
       if (months == null || months < 1) {
         setState(() => _error = 'Укажите срок рассрочки');
@@ -207,7 +215,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
     });
 
     try {
-      final monthlyDigits = _installmentMonthlyController.text.replaceAll(RegExp(r'[^\d]'), '');
+      final monthlyDigits =
+          _installmentMonthlyController.text.replaceAll(RegExp(r'[^\d]'), '');
       await _repo.update(
         widget.listingId,
         title: _titleController.text.trim(),
@@ -222,21 +231,41 @@ class _EditListingScreenState extends State<EditListingScreen> {
             : null,
         address: _address,
         propertyType: _propertyType,
-        apartmentType: _propertyType == PropertyType.apartment ? _apartmentType : null,
-        developer: _propertyType == PropertyType.apartment ? _developerController.text.trim() : null,
-        complex: _propertyType == PropertyType.apartment ? _complexController.text.trim() : null,
+        apartmentType:
+            _propertyType == PropertyType.apartment ? _apartmentType : null,
+        developer: _propertyType == PropertyType.apartment
+            ? _developerController.text.trim()
+            : null,
+        complex: _propertyType == PropertyType.apartment
+            ? _complexController.text.trim()
+            : null,
         status: _status,
-        rooms: _roomsController.text.isNotEmpty ? int.parse(_roomsController.text) : null,
-        area: _areaController.text.isNotEmpty ? double.parse(_areaController.text) : null,
-        floor: _floorController.text.isNotEmpty ? int.parse(_floorController.text) : null,
-        totalFloors: _totalFloorsController.text.isNotEmpty ? int.parse(_totalFloorsController.text) : null,
+        rooms: _roomsController.text.isNotEmpty
+            ? int.parse(_roomsController.text)
+            : null,
+        area: _areaController.text.isNotEmpty
+            ? double.parse(_areaController.text)
+            : null,
+        floor: _floorController.text.isNotEmpty
+            ? int.parse(_floorController.text)
+            : null,
+        totalFloors: _totalFloorsController.text.isNotEmpty
+            ? int.parse(_totalFloorsController.text)
+            : null,
         images: _images,
         lat: _lat,
         lng: _lng,
         dealType: _dealType,
-        dduNumber: _dealType == DealType.assignment ? _dduNumberController.text.trim() : null,
-        assignmentOriginalPrice: _dealType == DealType.assignment ? double.tryParse(_assignmentOriginalPriceController.text.replaceAll(RegExp(r'[^\d]'), '')) : null,
-        completionDate: _dealType == DealType.assignment ? _completionDateController.text.trim() : null,
+        dduNumber: _dealType == DealType.assignment
+            ? _dduNumberController.text.trim()
+            : null,
+        assignmentOriginalPrice: _dealType == DealType.assignment
+            ? double.tryParse(_assignmentOriginalPriceController.text
+                .replaceAll(RegExp(r'[^\d]'), ''))
+            : null,
+        completionDate: _dealType == DealType.assignment
+            ? _completionDateController.text.trim()
+            : null,
       );
       if (mounted) {
         context.pop();
@@ -290,7 +319,10 @@ class _EditListingScreenState extends State<EditListingScreen> {
           TextButton(
             onPressed: _saving ? null : _save,
             child: _saving
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2))
                 : const Text('Сохранить'),
           ),
         ],
@@ -307,13 +339,16 @@ class _EditListingScreenState extends State<EditListingScreen> {
                 decoration: BoxDecoration(
                   color: context.appColors.error.withAlpha(25),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: context.appColors.error.withAlpha(76)),
+                  border:
+                      Border.all(color: context.appColors.error.withAlpha(76)),
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.error_outline, color: context.appColors.error),
                     const SizedBox(width: 12),
-                    Expanded(child: Text(_error!, style: TextStyle(color: context.appColors.error))),
+                    Expanded(
+                        child: Text(_error!,
+                            style: TextStyle(color: context.appColors.error))),
                   ],
                 ),
               ),
@@ -321,10 +356,16 @@ class _EditListingScreenState extends State<EditListingScreen> {
             // Photos
             Row(
               children: [
-                const Text('Фотографии', style: TextStyle(fontWeight: FontWeight.w600)),
-                Text(' *', style: TextStyle(color: context.appColors.error, fontWeight: FontWeight.w600)),
+                const Text('Фотографии',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(' *',
+                    style: TextStyle(
+                        color: context.appColors.error,
+                        fontWeight: FontWeight.w600)),
                 const SizedBox(width: 8),
-                Text('Минимум 1 фото', style: TextStyle(fontSize: 12, color: context.appColors.textMuted)),
+                Text('Минимум 1 фото',
+                    style: TextStyle(
+                        fontSize: 12, color: context.appColors.textMuted)),
               ],
             ),
             const SizedBox(height: 8),
@@ -338,9 +379,13 @@ class _EditListingScreenState extends State<EditListingScreen> {
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.add_photo_alternate_outlined, size: 48, color: context.appColors.textMuted),
+                    Icon(Icons.add_photo_alternate_outlined,
+                        size: 48, color: context.appColors.textMuted),
                     const SizedBox(height: 8),
-                    Text('Добавить фото', style: TextStyle(color: context.appColors.primary, fontWeight: FontWeight.w500)),
+                    Text('Добавить фото',
+                        style: TextStyle(
+                            color: context.appColors.primary,
+                            fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
@@ -360,7 +405,9 @@ class _EditListingScreenState extends State<EditListingScreen> {
                           margin: const EdgeInsets.only(right: 8),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
-                            image: DecorationImage(image: NetworkImage(_images[index]), fit: BoxFit.cover),
+                            image: DecorationImage(
+                                image: NetworkImage(_images[index]),
+                                fit: BoxFit.cover),
                           ),
                         ),
                         Positioned(
@@ -369,19 +416,29 @@ class _EditListingScreenState extends State<EditListingScreen> {
                           child: GestureDetector(
                             onTap: () => _removeImage(index),
                             child: Container(
-                              width: 24, height: 24,
-                              decoration: BoxDecoration(color: context.appColors.error, shape: BoxShape.circle),
-                              child: const Icon(Icons.close, size: 16, color: Colors.white),
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                  color: context.appColors.error,
+                                  shape: BoxShape.circle),
+                              child: const Icon(Icons.close,
+                                  size: 16, color: Colors.white),
                             ),
                           ),
                         ),
                         if (index == 0)
                           Positioned(
-                            bottom: 4, left: 4,
+                            bottom: 4,
+                            left: 4,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(color: context.appColors.primary, borderRadius: BorderRadius.circular(4)),
-                              child: const Text('Главное', style: TextStyle(color: Colors.white, fontSize: 10)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                  color: context.appColors.primary,
+                                  borderRadius: BorderRadius.circular(4)),
+                              child: const Text('Главное',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: 10)),
                             ),
                           ),
                       ],
@@ -393,7 +450,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
             const SizedBox(height: 24),
 
             // Property Type
-            const Text('Тип недвижимости', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text('Тип недвижимости',
+                style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -411,7 +469,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
             const SizedBox(height: 24),
 
             // Deal Type
-            const Text('Тип сделки', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text('Тип сделки',
+                style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Row(
               children: DealType.values.map((type) {
@@ -430,16 +489,26 @@ class _EditListingScreenState extends State<EditListingScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: selected ? context.appColors.primary : context.appColors.border,
+                            color: selected
+                                ? context.appColors.primary
+                                : context.appColors.border,
                             width: selected ? 2 : 1,
                           ),
-                          color: selected ? context.appColors.primary.withAlpha(20) : context.appColors.surfaceWhite,
+                          color: selected
+                              ? context.appColors.primary.withAlpha(20)
+                              : context.appColors.surfaceWhite,
                         ),
                         child: Column(
                           children: [
-                            Text(type.icon, style: const TextStyle(fontSize: 24)),
+                            Text(type.icon,
+                                style: const TextStyle(fontSize: 24)),
                             const SizedBox(height: 4),
-                            Text(type.label, style: TextStyle(fontWeight: FontWeight.w600, color: selected ? context.appColors.primary : context.appColors.textSecondary)),
+                            Text(type.label,
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: selected
+                                        ? context.appColors.primary
+                                        : context.appColors.textSecondary)),
                           ],
                         ),
                       ),
@@ -456,7 +525,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: context.appColors.accent.withValues(alpha: 0.1),
-                  border: Border.all(color: context.appColors.accent.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: context.appColors.accent.withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -464,9 +534,13 @@ class _EditListingScreenState extends State<EditListingScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info_outline, size: 18, color: context.appColors.accent),
+                        Icon(Icons.info_outline,
+                            size: 18, color: context.appColors.accent),
                         const SizedBox(width: 8),
-                        Text('Данные переуступки', style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.accent)),
+                        Text('Данные переуступки',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: context.appColors.accent)),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -502,7 +576,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
 
             // Apartment Type (only for apartments)
             if (_propertyType == PropertyType.apartment) ...[
-              const Text('Тип квартиры', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text('Тип квартиры',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -531,12 +606,16 @@ class _EditListingScreenState extends State<EditListingScreen> {
 
             // Status (Admin only)
             if (isAdmin) ...[
-              const Text('Статус', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text('Статус',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Builder(builder: (context) {
-                final statusValues = _listing?.moderationStatus == ModerationStatus.approved
-                    ? ListingStatus.values.where((s) => s != ListingStatus.pending).toList()
-                    : ListingStatus.values;
+                final statusValues =
+                    _listing?.moderationStatus == ModerationStatus.approved
+                        ? ListingStatus.values
+                            .where((s) => s != ListingStatus.pending)
+                            .toList()
+                        : ListingStatus.values;
                 return Wrap(
                   spacing: 8,
                   children: statusValues.map((s) {
@@ -557,7 +636,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
             TextFormField(
               controller: _titleController,
               decoration: const InputDecoration(labelText: 'Заголовок'),
-              validator: (v) => v == null || v.isEmpty ? 'Обязательное поле' : null,
+              validator: (v) =>
+                  v == null || v.isEmpty ? 'Обязательное поле' : null,
             ),
             const SizedBox(height: 16),
 
@@ -566,17 +646,21 @@ class _EditListingScreenState extends State<EditListingScreen> {
               controller: _descriptionController,
               decoration: const InputDecoration(labelText: 'Описание'),
               maxLines: 4,
-              validator: (v) => v == null || v.isEmpty ? 'Обязательное поле' : null,
+              validator: (v) =>
+                  v == null || v.isEmpty ? 'Обязательное поле' : null,
             ),
             const SizedBox(height: 24),
 
             // Price & Payment
-            const Text('Стоимость и оплата', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            const Text('Стоимость и оплата',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
             const SizedBox(height: 12),
             TextFormField(
               controller: _priceController,
               decoration: InputDecoration(
-                labelText: _paymentType == PaymentType.installment ? 'Первый взнос, ₽' : 'Цена, ₽',
+                labelText: _paymentType == PaymentType.installment
+                    ? 'Первый взнос, ₽'
+                    : 'Цена, ₽',
                 prefixIcon: const Icon(Icons.attach_money),
                 suffixText: '₽',
               ),
@@ -586,22 +670,29 @@ class _EditListingScreenState extends State<EditListingScreen> {
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Обязательное поле';
                 final digits = v.replaceAll(RegExp(r'[^\d]'), '');
-                if (double.tryParse(digits) == null) return 'Некорректное число';
+                if (double.tryParse(digits) == null)
+                  return 'Некорректное число';
                 return null;
               },
             ),
             Builder(builder: (context) {
-              final digits = _priceController.text.replaceAll(RegExp(r'[^\d]'), '');
+              final digits =
+                  _priceController.text.replaceAll(RegExp(r'[^\d]'), '');
               if (digits.isEmpty) return const SizedBox.shrink();
               return Padding(
                 padding: const EdgeInsets.only(top: 4, left: 16),
-                child: Text('${_formatNumber(digits)} ₽', style: TextStyle(fontSize: 13, color: context.appColors.primary, fontWeight: FontWeight.w500)),
+                child: Text('${_formatNumber(digits)} ₽',
+                    style: TextStyle(
+                        fontSize: 13,
+                        color: context.appColors.primary,
+                        fontWeight: FontWeight.w500)),
               );
             }),
             const SizedBox(height: 16),
 
             // Payment Type
-            const Text('Способ оплаты', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text('Способ оплаты',
+                style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             Row(
               children: PaymentType.values.map((type) {
@@ -620,16 +711,26 @@ class _EditListingScreenState extends State<EditListingScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: selected ? context.appColors.primary : context.appColors.border,
+                            color: selected
+                                ? context.appColors.primary
+                                : context.appColors.border,
                             width: selected ? 2 : 1,
                           ),
-                          color: selected ? context.appColors.primary.withAlpha(20) : context.appColors.surfaceWhite,
+                          color: selected
+                              ? context.appColors.primary.withAlpha(20)
+                              : context.appColors.surfaceWhite,
                         ),
                         child: Column(
                           children: [
-                            Text(type.icon, style: const TextStyle(fontSize: 24)),
+                            Text(type.icon,
+                                style: const TextStyle(fontSize: 24)),
                             const SizedBox(height: 4),
-                            Text(type.label, style: TextStyle(fontWeight: FontWeight.w600, color: selected ? context.appColors.primary : context.appColors.textSecondary)),
+                            Text(type.label,
+                                style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: selected
+                                        ? context.appColors.primary
+                                        : context.appColors.textSecondary)),
                           ],
                         ),
                       ),
@@ -646,7 +747,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: context.appColors.accent.withValues(alpha: 0.1),
-                  border: Border.all(color: context.appColors.accent.withValues(alpha: 0.3)),
+                  border: Border.all(
+                      color: context.appColors.accent.withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
@@ -654,9 +756,13 @@ class _EditListingScreenState extends State<EditListingScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info_outline, size: 18, color: context.appColors.accent),
+                        Icon(Icons.info_outline,
+                            size: 18, color: context.appColors.accent),
                         const SizedBox(width: 8),
-                        Text('Условия рассрочки', style: TextStyle(fontWeight: FontWeight.w600, color: context.appColors.accent)),
+                        Text('Условия рассрочки',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: context.appColors.accent)),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -665,37 +771,63 @@ class _EditListingScreenState extends State<EditListingScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: _installmentMonthsController,
-                            decoration: const InputDecoration(labelText: 'Срок, мес.', hintText: '12', prefixIcon: Icon(Icons.calendar_month)),
+                            decoration: const InputDecoration(
+                                labelText: 'Срок, мес.',
+                                hintText: '12',
+                                prefixIcon: Icon(Icons.calendar_month)),
                             keyboardType: TextInputType.number,
-                            validator: _paymentType == PaymentType.installment ? (v) => v == null || v.isEmpty ? 'Обязательно' : null : null,
+                            validator: _paymentType == PaymentType.installment
+                                ? (v) => v == null || v.isEmpty
+                                    ? 'Обязательно'
+                                    : null
+                                : null,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: TextFormField(
                             controller: _installmentMonthlyController,
-                            decoration: const InputDecoration(labelText: 'Платёж/мес, ₽', hintText: '50 000', prefixIcon: Icon(Icons.payments_outlined), suffixText: '₽'),
+                            decoration: const InputDecoration(
+                                labelText: 'Платёж/мес, ₽',
+                                hintText: '50 000',
+                                prefixIcon: Icon(Icons.payments_outlined),
+                                suffixText: '₽'),
                             keyboardType: TextInputType.number,
                             inputFormatters: [_PriceInputFormatter()],
-                            validator: _paymentType == PaymentType.installment ? (v) => v == null || v.isEmpty ? 'Обязательно' : null : null,
+                            validator: _paymentType == PaymentType.installment
+                                ? (v) => v == null || v.isEmpty
+                                    ? 'Обязательно'
+                                    : null
+                                : null,
                           ),
                         ),
                       ],
                     ),
                     Builder(builder: (context) {
-                      final months = int.tryParse(_installmentMonthsController.text);
-                      final monthlyDigits = _installmentMonthlyController.text.replaceAll(RegExp(r'[^\d]'), '');
+                      final months =
+                          int.tryParse(_installmentMonthsController.text);
+                      final monthlyDigits = _installmentMonthlyController.text
+                          .replaceAll(RegExp(r'[^\d]'), '');
                       final monthly = double.tryParse(monthlyDigits);
-                      if (months == null || monthly == null || months < 1 || monthly < 1) return const SizedBox.shrink();
+                      if (months == null ||
+                          monthly == null ||
+                          months < 1 ||
+                          monthly < 1) return const SizedBox.shrink();
                       final total = (months * monthly).round();
                       return Padding(
                         padding: const EdgeInsets.only(top: 12),
                         child: Container(
                           padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(color: context.appColors.accent.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                          decoration: BoxDecoration(
+                              color: context.appColors.accent
+                                  .withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8)),
                           child: Text(
                             'Итого за рассрочку: ${_formatNumber(total.toString())} ₽ ($months мес × ${_formatNumber(monthlyDigits)} ₽)',
-                            style: TextStyle(fontSize: 13, color: context.appColors.accent, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: context.appColors.accent,
+                                fontWeight: FontWeight.w500),
                           ),
                         ),
                       );
@@ -742,7 +874,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
                 Expanded(
                   child: TextFormField(
                     controller: _totalFloorsController,
-                    decoration: const InputDecoration(labelText: 'Этажей всего'),
+                    decoration:
+                        const InputDecoration(labelText: 'Этажей всего'),
                     keyboardType: TextInputType.number,
                   ),
                 ),
@@ -756,8 +889,8 @@ class _EditListingScreenState extends State<EditListingScreen> {
               initialAddress: _address,
               enabled: !_saving,
               reverseAddress: _reverseAddress,
-              onCityChanged: (city) => setState(() => _city = city),
-              onAddressChanged: (addr) => setState(() => _address = addr),
+              onCityChanged: (city) => _city = city,
+              onAddressChanged: (addr) => _address = addr,
               onLocationSelected: (lat, lng) {
                 _lat = lat;
                 _lng = lng;
@@ -766,11 +899,13 @@ class _EditListingScreenState extends State<EditListingScreen> {
             const SizedBox(height: 24),
 
             // Map
-            const Text('Местоположение', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text('Местоположение',
+                style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(
               'Нажмите на карту — адрес заполнится автоматически',
-              style: TextStyle(color: context.appColors.textMuted, fontSize: 12),
+              style:
+                  TextStyle(color: context.appColors.textMuted, fontSize: 12),
             ),
             const SizedBox(height: 8),
             ClipRRect(
@@ -789,7 +924,7 @@ class _EditListingScreenState extends State<EditListingScreen> {
                       _reverseAddress = address;
                       _address = address;
                       final parts = address.split(', ');
-                      if (parts.isNotEmpty && _city.isEmpty) {
+                      if (parts.isNotEmpty) {
                         _city = parts[0];
                       }
                     });
@@ -802,9 +937,14 @@ class _EditListingScreenState extends State<EditListingScreen> {
             // Save Button
             ElevatedButton(
               onPressed: _saving ? null : _save,
-              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+              style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56)),
               child: _saving
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
                   : const Text('Сохранить изменения'),
             ),
             const SizedBox(height: 32),

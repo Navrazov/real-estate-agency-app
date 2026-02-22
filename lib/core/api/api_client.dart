@@ -8,11 +8,20 @@ class ApiClient {
     defaultValue: 'https://api.estate-hub.ru/api',
   );
 
-  ApiClient({String baseUrl = defaultBaseUrl}) : _baseUrl = baseUrl;
+  ApiClient({String baseUrl = defaultBaseUrl}) : _baseUrl = _resolveBaseUrl(baseUrl);
 
   final String _baseUrl;
 
   static const _tokenKey = 'token';
+
+  static String _resolveBaseUrl(String baseUrl) {
+    final host = Uri.base.host.toLowerCase();
+    final isPublicHost = host.isNotEmpty && host != 'localhost' && host != '127.0.0.1';
+    if (isPublicHost && (baseUrl.contains('localhost') || baseUrl.contains('127.0.0.1'))) {
+      return 'https://api.estate-hub.ru/api';
+    }
+    return baseUrl;
+  }
 
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();

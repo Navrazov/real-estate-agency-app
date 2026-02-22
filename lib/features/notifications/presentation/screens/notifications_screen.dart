@@ -13,21 +13,43 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   final _repo = NotificationsRepository();
+  final _scrollController = ScrollController();
   List<AppNotification> _notifications = [];
   bool _loading = true;
+  bool _loadingMore = false;
   int _page = 1;
   int _totalPages = 1;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _load();
   }
 
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_loadingMore &&
+        _page < _totalPages) {
+      _loadMore();
+    }
+  }
+
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _page = 1;
+    });
     try {
-      final response = await _repo.getAll(page: _page);
+      final response = await _repo.getAll(page: 1);
       if (mounted) {
         setState(() {
           _notifications = response.items;
@@ -42,6 +64,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       }
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadMore() async {
+    setState(() => _loadingMore = true);
+    final nextPage = _page + 1;
+    try {
+      final response = await _repo.getAll(page: nextPage);
+      if (mounted) {
+        setState(() {
+          _page = nextPage;
+          _notifications.addAll(response.items);
+          _totalPages = response.totalPages;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
     }
   }
 
@@ -141,21 +181,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.builder(
+                    controller: _scrollController,
                     padding: const EdgeInsets.all(16),
                     itemCount: _notifications.length +
-                        (_page < _totalPages ? 1 : 0),
+                        (_loadingMore ? 1 : 0),
                     itemBuilder: (context, i) {
                       if (i >= _notifications.length) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
                           child: Center(
-                            child: ElevatedButton(
-                              onPressed: () {
-                                setState(() => _page++);
-                                _load();
-                              },
-                              child: const Text('Загрузить ещё'),
-                            ),
+                            child: CircularProgressIndicator(),
                           ),
                         );
                       }

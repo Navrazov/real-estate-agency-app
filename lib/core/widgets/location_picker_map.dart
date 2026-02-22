@@ -1,17 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
-import 'package:real_estate_app/app/theme/app_theme.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:real_estate_app/core/widgets/yandex_web_embed.dart';
 
 class LocationPickerMap extends StatefulWidget {
   const LocationPickerMap({
     super.key,
     this.initialLat,
     this.initialLng,
-    // Legacy support
     double? lat,
     double? lng,
     void Function(double lat, double lng)? onChanged,
@@ -36,68 +36,69 @@ class LocationPickerMap extends StatefulWidget {
 }
 
 class _LocationPickerMapState extends State<LocationPickerMap> {
-  static const _defaultCenter = LatLng(55.75, 37.62);
-  static const _defaultZoom = 10.0;
-  late LatLng _point;
+  static const _defaultCenter = _MapPoint(43.3178, 45.6986);
+  static const _defaultZoom = 11.0;
+  static const _yandexApiKey = String.fromEnvironment('YANDEX_MAPS_API_KEY');
+  static const _yandexGeocoderApiKey = String.fromEnvironment(
+    'YANDEX_GEOCODER_API_KEY',
+    defaultValue: String.fromEnvironment('YANDEX_MAPS_API_KEY'),
+  );
+
+  WebViewController? _controller;
+
   Timer? _reverseTimer;
+  _MapPoint _point = _defaultCenter;
 
   double? get _lat => widget.initialLat ?? widget._legacyLat;
   double? get _lng => widget.initialLng ?? widget._legacyLng;
-
-  void _notifyChange(double lat, double lng) {
-    widget.onLocationChanged?.call(lat, lng);
-    widget._legacyOnChanged?.call(lat, lng);
-
-    // Debounced reverse geocoding
-    if (widget.onReverseGeocode != null) {
-      _reverseTimer?.cancel();
-      _reverseTimer = Timer(const Duration(milliseconds: 500), () {
-        _reverseGeocode(lat, lng);
-      });
-    }
-  }
-
-  Future<void> _reverseGeocode(double lat, double lng) async {
-    try {
-      final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
-        'format': 'json',
-        'lat': lat.toString(),
-        'lon': lng.toString(),
-        'accept-language': 'ru',
-        'addressdetails': '1',
-      });
-      final res = await http.get(uri, headers: {'User-Agent': 'RealEstateApp/1.0'});
-      if (res.statusCode != 200) return;
-      final data = jsonDecode(res.body) as Map<String, dynamic>;
-      final addr = data['address'] as Map<String, dynamic>?;
-      if (addr == null) return;
-
-      final city = addr['city'] ?? addr['town'] ?? addr['village'] ?? '';
-      final road = addr['road'] ?? '';
-      final house = addr['house_number'] ?? '';
-
-      final parts = <String>[];
-      if (city != '') parts.add(city as String);
-      if (road != '') parts.add(road as String);
-      if (house != '') parts.add(house as String);
-
-      if (parts.isNotEmpty && mounted) {
-        widget.onReverseGeocode!(parts.join(', '));
-      }
-    } catch (_) {}
-  }
+  bool get _canUseWebView =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   @override
   void initState() {
     super.initState();
-    _point = _lat != null && _lng != null ? LatLng(_lat!, _lng!) : _defaultCenter;
+
+    if (_lat != null && _lng != null) {
+      _point = _MapPoint(_lat!, _lng!);
+    }
+
+    if (_canUseWebView) {
+      _controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onNavigationRequest: (request) {
+              if (request.url.startsWith('about:blank')) {
+                return NavigationDecision.navigate;
+              }
+              return NavigationDecision.prevent;
+            },
+          ),
+        )
+        ..addJavaScriptChannel(
+          'LocationChanged',
+          onMessageReceived: (message) {
+            _handleLocationMessage(message.message);
+          },
+        );
+
+      _loadHtml();
+    }
   }
 
   @override
-  void didUpdateWidget(LocationPickerMap oldWidget) {
+  void didUpdateWidget(covariant LocationPickerMap oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_lat != null && _lng != null) {
-      _point = LatLng(_lat!, _lng!);
+      final next = _MapPoint(_lat!, _lng!);
+      if (next.lat != _point.lat || next.lng != _point.lng) {
+        _point = next;
+        _controller
+            ?.runJavaScript('window.setPoint(${_point.lat}, ${_point.lng});')
+            .catchError((_) {});
+      }
     }
   }
 
@@ -107,43 +108,214 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
     super.dispose();
   }
 
+  void _notifyChange(double lat, double lng) {
+    widget.onLocationChanged?.call(lat, lng);
+    widget._legacyOnChanged?.call(lat, lng);
+
+    if (widget.onReverseGeocode != null) {
+      _reverseTimer?.cancel();
+      _reverseTimer = Timer(const Duration(milliseconds: 450), () {
+        _reverseGeocode(lat, lng);
+      });
+    }
+  }
+
+  Future<void> _reverseGeocode(double lat, double lng) async {
+    if (_yandexGeocoderApiKey.isEmpty) return;
+    try {
+      final uri = Uri.https('geocode-maps.yandex.ru', '/1.x/', {
+        'apikey': _yandexGeocoderApiKey,
+        'format': 'json',
+        'lang': 'ru_RU',
+        'geocode': '${lng.toStringAsFixed(6)},${lat.toStringAsFixed(6)}',
+        'results': '1',
+      });
+      final res = await http.get(uri, headers: {'Accept': 'application/json'});
+      if (res.statusCode >= 400) return;
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final collection =
+          ((data['response'] as Map<String, dynamic>?)?['GeoObjectCollection']
+                  as Map<String, dynamic>?) ??
+              const {};
+      final members =
+          (collection['featureMember'] as List<dynamic>? ?? const []);
+      Map<String, dynamic>? member;
+      for (final entry in members) {
+        if (entry is Map<String, dynamic>) {
+          member = entry;
+          break;
+        }
+      }
+      final geo = member?['GeoObject'] as Map<String, dynamic>?;
+      final meta = (geo?['metaDataProperty']
+              as Map<String, dynamic>?)?['GeocoderMetaData']
+          as Map<String, dynamic>?;
+      final address = meta?['text'] as String?;
+      if (address != null && mounted) {
+        widget.onReverseGeocode?.call(address);
+      }
+    } catch (_) {
+      // ignore reverse-geocoding errors in picker
+    }
+  }
+
+  void _loadHtml() {
+    if (_yandexApiKey.isEmpty) return;
+
+    final html = '''
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <style>
+      html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; }
+    </style>
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=$_yandexApiKey&lang=ru_RU" type="text/javascript"></script>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      const startPoint = [${_point.lat}, ${_point.lng}];
+      const startZoom = ${_lat != null && _lng != null ? 14.0 : _defaultZoom};
+      let map;
+      let marker;
+
+      function emit(coords) {
+        LocationChanged.postMessage(coords[0] + ',' + coords[1]);
+      }
+
+      window.setPoint = function(lat, lng) {
+        if (!map || !marker) return;
+        const coords = [lat, lng];
+        marker.geometry.setCoordinates(coords);
+        map.setCenter(coords, Math.max(map.getZoom(), 12), { duration: 150 });
+      }
+
+      ymaps.ready(function() {
+        map = new ymaps.Map('map', {
+          center: startPoint,
+          zoom: startZoom
+        }, {
+          suppressMapOpenBlock: true,
+          controls: ['geolocationControl'],
+          minZoom: 2,
+          maxZoom: 18
+        });
+        try { map.behaviors.disable('ruler'); } catch (e) {}
+
+        marker = new ymaps.Placemark(startPoint, {}, {
+          preset: 'islands#redIcon',
+          draggable: true
+        });
+
+        marker.events.add('dragend', function() {
+          emit(marker.geometry.getCoordinates());
+        });
+
+        map.events.add('click', function(evt) {
+          const coords = evt.get('coords');
+          marker.geometry.setCoordinates(coords);
+          emit(coords);
+        });
+
+        map.geoObjects.add(marker);
+
+      });
+    </script>
+  </body>
+</html>
+''';
+
+    _controller?.loadHtmlString(html);
+  }
+
+  void _handleLocationMessage(String value) {
+    final parts = value.split(',');
+    if (parts.length != 2) return;
+    final lat = double.tryParse(parts[0]);
+    final lng = double.tryParse(parts[1]);
+    if (lat == null || lng == null) return;
+    _point = _MapPoint(lat, lng);
+    _notifyChange(lat, lng);
+  }
+
+  void _handleWebMessage(Map<String, dynamic> message) {
+    if (message['type'] != 'locationChanged') return;
+    final lat = message['lat'];
+    final lng = message['lng'];
+    if (lat is! num || lng is! num) return;
+    _point = _MapPoint(lat.toDouble(), lng.toDouble());
+    _notifyChange(_point.lat, _point.lng);
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_yandexApiKey.isEmpty) {
+      return SizedBox(
+        height: widget.height,
+        child: const Center(child: Text('Не задан YANDEX_MAPS_API_KEY')),
+      );
+    }
+
+    final html = _buildHtml();
+    final mapWidget = kIsWeb
+        ? YandexWebIFrame(html: html, onMessage: _handleWebMessage)
+        : (_canUseWebView && _controller != null)
+            ? WebViewWidget(controller: _controller!)
+            : const Center(
+                child: Text('Карта доступна только на iOS/Android/Web'));
+
     return SizedBox(
       height: widget.height,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: FlutterMap(
-          options: MapOptions(
-            initialCenter: _point,
-            initialZoom: _defaultZoom,
-            onTap: (_, pos) {
-              setState(() => _point = pos);
-              _notifyChange(pos.latitude, pos.longitude);
-            },
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.example.real_estate_app',
-            ),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: _point,
-                  width: 48,
-                  height: 48,
-                  child: Icon(
-                    Icons.location_on,
-                    color: context.appColors.primary,
-                    size: 48,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+      child: mapWidget,
     );
   }
+
+  String _buildHtml() {
+    return '''
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <style>html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; }</style>
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=$_yandexApiKey&lang=ru_RU" type="text/javascript"></script>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+      const startPoint = [${_point.lat}, ${_point.lng}];
+      const startZoom = ${_lat != null && _lng != null ? 14.0 : _defaultZoom};
+      let map; let marker;
+      function emit(coords) {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: 'locationChanged', lat: coords[0], lng: coords[1] }, '*');
+        } else if (window.LocationChanged && window.LocationChanged.postMessage) {
+          window.LocationChanged.postMessage(coords[0] + ',' + coords[1]);
+        }
+      }
+      window.setPoint = function(lat, lng) {
+        if (!map || !marker) return;
+        const coords = [lat, lng];
+        marker.geometry.setCoordinates(coords);
+        map.setCenter(coords, Math.max(map.getZoom(), 12), { duration: 150 });
+      }
+      ymaps.ready(function() {
+        map = new ymaps.Map('map', { center: startPoint, zoom: startZoom }, { suppressMapOpenBlock: true, controls: ['geolocationControl'], minZoom: 2, maxZoom: 18 });
+        try { map.behaviors.disable('ruler'); } catch (e) {}
+        marker = new ymaps.Placemark(startPoint, {}, { preset: 'islands#redIcon', draggable: true });
+        marker.events.add('dragend', function() { emit(marker.geometry.getCoordinates()); });
+        map.events.add('click', function(evt) { const coords = evt.get('coords'); marker.geometry.setCoordinates(coords); emit(coords); });
+        map.geoObjects.add(marker);
+      });
+    </script>
+  </body>
+</html>
+''';
+  }
+}
+
+class _MapPoint {
+  const _MapPoint(this.lat, this.lng);
+  final double lat;
+  final double lng;
 }

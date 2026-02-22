@@ -1,62 +1,60 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:real_estate_app/app/theme/app_theme.dart';
 import 'package:http/http.dart' as http;
+import 'package:real_estate_app/app/theme/app_theme.dart';
 
-class NominatimResult {
-  final String displayName;
-  final double lat;
-  final double lon;
-
-  NominatimResult({
-    required this.displayName,
+class GeocodeSuggestion {
+  GeocodeSuggestion({
+    required this.title,
+    required this.address,
     required this.lat,
-    required this.lon,
+    required this.lng,
   });
 
-  factory NominatimResult.fromJson(Map<String, dynamic> json) {
-    return NominatimResult(
-      displayName: json['display_name'] as String,
-      lat: double.parse(json['lat'] as String),
-      lon: double.parse(json['lon'] as String),
+  final String title;
+  final String address;
+  final double lat;
+  final double lng;
+
+  factory GeocodeSuggestion.fromJson(Map<String, dynamic> json) {
+    return GeocodeSuggestion(
+      title: (json['title'] as String?) ?? '',
+      address: (json['address'] as String?) ?? '',
+      lat: (json['lat'] as num).toDouble(),
+      lng: (json['lng'] as num).toDouble(),
     );
   }
 }
 
-Future<List<NominatimResult>> _searchNominatim(Map<String, String> params) async {
-  final query = {
-    'format': 'json',
-    'accept-language': 'ru',
-    'countrycodes': 'ru',
-    'limit': '5',
-    ...params,
-  };
-  final uri = Uri.https('nominatim.openstreetmap.org', '/search', query);
-  try {
-    final res = await http.get(uri, headers: {'User-Agent': 'RealEstateApp/1.0'});
-    if (res.statusCode != 200) return [];
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list.map((e) => NominatimResult.fromJson(e as Map<String, dynamic>)).toList();
-  } catch (_) {
-    return [];
-  }
+String _extractCity(String address) {
+  final parts = address
+      .split(',')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return '';
+  final cityPart = parts.firstWhere(
+    (p) => RegExp(r'(г\.?\s|город\s)', caseSensitive: false).hasMatch(p),
+    orElse: () => parts.first,
+  );
+  return cityPart
+      .replaceFirst(RegExp(r'^г\.?\s*', caseSensitive: false), '')
+      .replaceFirst(RegExp(r'^город\s*', caseSensitive: false), '')
+      .trim();
 }
 
-String _cleanAddress(String displayName, String city) {
-  final parts = displayName.split(',').map((s) => s.trim()).toList();
-  return parts.where((p) {
-    if (p == city || p == 'Россия' || p == 'Russia') return false;
-    if (RegExp(r'^\d{5,6}$').hasMatch(p)) return false;
-    if (RegExp(r'район$', caseSensitive: false).hasMatch(p)) return false;
-    if (RegExp(r'округ$', caseSensitive: false).hasMatch(p)) return false;
-    if (RegExp(r'область$', caseSensitive: false).hasMatch(p)) return false;
-    if (RegExp(r'край$', caseSensitive: false).hasMatch(p)) return false;
-    if (RegExp(r'республика', caseSensitive: false).hasMatch(p)) return false;
-    if (RegExp(r'городской округ', caseSensitive: false).hasMatch(p)) return false;
-    if (RegExp(r'муниципальный', caseSensitive: false).hasMatch(p)) return false;
-    return true;
-  }).join(', ');
+String _withoutCity(String fullAddress, String city) {
+  if (fullAddress.isEmpty) return '';
+  if (city.isEmpty) return fullAddress.trim();
+  final cityRegex =
+      RegExp('(^$city[,\\s]*)|(^г\\.?\\s*$city[,\\s]*)', caseSensitive: false);
+  return fullAddress
+      .trim()
+      .replaceFirst(cityRegex, '')
+      .replaceFirst(RegExp(r'^,\s*'), '')
+      .trim();
 }
 
 class AddressPicker extends StatefulWidget {
@@ -84,58 +82,76 @@ class AddressPicker extends StatefulWidget {
 }
 
 class _AddressPickerState extends State<AddressPicker> {
+  static const _yandexGeocoderApiKey = String.fromEnvironment(
+    'YANDEX_GEOCODER_API_KEY',
+    defaultValue: String.fromEnvironment('YANDEX_MAPS_API_KEY'),
+  );
+
   final _cityController = TextEditingController();
   final _addressController = TextEditingController();
+
   final _cityFocus = FocusNode();
   final _addressFocus = FocusNode();
 
-  List<NominatimResult> _citySuggestions = [];
-  List<NominatimResult> _addressSuggestions = [];
+  List<GeocodeSuggestion> _citySuggestions = [];
+  List<GeocodeSuggestion> _addressSuggestions = [];
+
   bool _cityConfirmed = false;
   String _selectedCity = '';
   bool _loadingCities = false;
   bool _loadingAddresses = false;
+
   Timer? _cityDebounce;
   Timer? _addressDebounce;
-
-  OverlayEntry? _cityOverlay;
-  OverlayEntry? _addressOverlay;
-  final _cityKey = GlobalKey();
-  final _addressKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
+
     if (widget.initialCity != null && widget.initialCity!.isNotEmpty) {
       _cityController.text = widget.initialCity!;
       _selectedCity = widget.initialCity!;
       _cityConfirmed = true;
     }
+
     if (widget.initialAddress != null && widget.initialAddress!.isNotEmpty) {
-      // Show only the part after city
-      final addr = widget.initialAddress!;
-      if (_selectedCity.isNotEmpty && addr.startsWith(_selectedCity)) {
-        final rest = addr.substring(_selectedCity.length).replaceFirst(RegExp(r'^,\s*'), '');
-        _addressController.text = rest;
-      } else {
-        _addressController.text = addr;
-      }
+      _addressController.text =
+          _withoutCity(widget.initialAddress!, _selectedCity);
     }
+
     _cityController.addListener(_onCityChanged);
     _addressController.addListener(_onAddressChanged);
   }
 
   @override
-  void didUpdateWidget(AddressPicker oldWidget) {
+  void didUpdateWidget(covariant AddressPicker oldWidget) {
     super.didUpdateWidget(oldWidget);
+
     if (widget.reverseAddress != null &&
-        widget.reverseAddress != oldWidget.reverseAddress &&
-        _cityConfirmed) {
-      final cleaned = widget.reverseAddress!.replaceFirst('$_selectedCity, ', '');
+        widget.reverseAddress != oldWidget.reverseAddress) {
+      final city = _extractCity(widget.reverseAddress!);
+      final street = _withoutCity(widget.reverseAddress!, city);
+
+      _cityController.removeListener(_onCityChanged);
+      _cityController.text = city;
+      _cityController.addListener(_onCityChanged);
+
       _addressController.removeListener(_onAddressChanged);
-      _addressController.text = cleaned;
+      _addressController.text = street;
       _addressController.addListener(_onAddressChanged);
+
+      _selectedCity = city;
+      _cityConfirmed = city.isNotEmpty;
+
+      widget.onCityChanged(city);
       widget.onAddressChanged(widget.reverseAddress!);
+
+      if (mounted) {
+        setState(() {
+          _citySuggestions = [];
+          _addressSuggestions = [];
+        });
+      }
     }
   }
 
@@ -147,9 +163,58 @@ class _AddressPickerState extends State<AddressPicker> {
     _addressController.dispose();
     _cityFocus.dispose();
     _addressFocus.dispose();
-    _hideCityOverlay();
-    _hideAddressOverlay();
     super.dispose();
+  }
+
+  Future<List<GeocodeSuggestion>> _search(String query, {int limit = 8}) async {
+    if (_yandexGeocoderApiKey.isEmpty) return [];
+    final uri = Uri.https('geocode-maps.yandex.ru', '/1.x/', {
+      'apikey': _yandexGeocoderApiKey,
+      'format': 'json',
+      'lang': 'ru_RU',
+      'geocode': query,
+      'results': '$limit',
+    });
+    final res = await http.get(uri, headers: {'Accept': 'application/json'});
+    if (res.statusCode >= 400) {
+      throw Exception('Geocoder request failed: ${res.statusCode}');
+    }
+
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final collection =
+        ((data['response'] as Map<String, dynamic>?)?['GeoObjectCollection']
+                as Map<String, dynamic>?) ??
+            const {};
+    final featureMember =
+        (collection['featureMember'] as List<dynamic>? ?? const []);
+
+    return featureMember
+        .whereType<Map<String, dynamic>>()
+        .map((item) => item['GeoObject'])
+        .whereType<Map<String, dynamic>>()
+        .map((geo) {
+          final point = (geo['Point'] as Map<String, dynamic>?) ?? const {};
+          final pos = (point['pos'] as String? ?? '').trim();
+          final coords = pos.split(RegExp(r'\s+'));
+          if (coords.length < 2) return null;
+          final lng = double.tryParse(coords[0]);
+          final lat = double.tryParse(coords[1]);
+          if (lat == null || lng == null) return null;
+          final meta = ((geo['metaDataProperty']
+                      as Map<String, dynamic>?)?['GeocoderMetaData']
+                  as Map<String, dynamic>?) ??
+              const {};
+          final text = (meta['text'] as String?)?.trim() ?? '';
+          final name = (geo['name'] as String?)?.trim() ?? text;
+          return GeocodeSuggestion(
+            title: name,
+            address: text.isNotEmpty ? text : name,
+            lat: lat,
+            lng: lng,
+          );
+        })
+        .whereType<GeocodeSuggestion>()
+        .toList();
   }
 
   void _onCityChanged() {
@@ -160,192 +225,110 @@ class _AddressPickerState extends State<AddressPicker> {
       widget.onCityChanged('');
       widget.onAddressChanged('');
     }
+
     _cityDebounce?.cancel();
     final text = _cityController.text.trim();
+
     if (text.length < 2) {
-      setState(() => _citySuggestions = []);
-      _hideCityOverlay();
+      if (mounted) setState(() => _citySuggestions = []);
       return;
     }
-    _cityDebounce = Timer(const Duration(milliseconds: 400), () {
-      _searchCities(text);
+
+    _cityDebounce = Timer(const Duration(milliseconds: 320), () async {
+      if (!mounted) return;
+      setState(() => _loadingCities = true);
+
+      try {
+        final results = await _search(text, limit: 8);
+        if (!mounted) return;
+        setState(() => _citySuggestions = results);
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _citySuggestions = []);
+      } finally {
+        if (mounted) setState(() => _loadingCities = false);
+      }
     });
   }
 
   void _onAddressChanged() {
     _addressDebounce?.cancel();
     final text = _addressController.text.trim();
+
     if (text.length < 2 || !_cityConfirmed || _selectedCity.isEmpty) {
-      setState(() => _addressSuggestions = []);
-      _hideAddressOverlay();
+      if (mounted) setState(() => _addressSuggestions = []);
       return;
     }
+
     widget.onAddressChanged('$_selectedCity, $text');
-    _addressDebounce = Timer(const Duration(milliseconds: 400), () {
-      _searchAddresses(text);
+
+    _addressDebounce = Timer(const Duration(milliseconds: 320), () async {
+      if (!mounted) return;
+      setState(() => _loadingAddresses = true);
+
+      try {
+        final results = await _search('$_selectedCity, $text', limit: 8);
+        if (!mounted) return;
+        setState(() => _addressSuggestions = results);
+      } catch (_) {
+        if (!mounted) return;
+        setState(() => _addressSuggestions = []);
+      } finally {
+        if (mounted) setState(() => _loadingAddresses = false);
+      }
     });
   }
 
-  Future<void> _searchCities(String query) async {
-    setState(() => _loadingCities = true);
-    final results = await _searchNominatim({'q': query, 'featuretype': 'city'});
-    if (!mounted) return;
-    setState(() {
-      _citySuggestions = results;
-      _loadingCities = false;
-    });
-    if (results.isNotEmpty) {
-      _showCityOverlay();
-    } else {
-      _hideCityOverlay();
-    }
-  }
+  void _selectCity(GeocodeSuggestion suggestion) {
+    final city = _extractCity(
+        suggestion.address.isNotEmpty ? suggestion.address : suggestion.title);
 
-  Future<void> _searchAddresses(String query) async {
-    setState(() => _loadingAddresses = true);
-    final results = await _searchNominatim({'q': '$_selectedCity, $query'});
-    if (!mounted) return;
-    setState(() {
-      _addressSuggestions = results;
-      _loadingAddresses = false;
-    });
-    if (results.isNotEmpty) {
-      _showAddressOverlay();
-    } else {
-      _hideAddressOverlay();
-    }
-  }
-
-  void _selectCity(NominatimResult result) {
-    final parts = result.displayName.split(',');
-    final name = parts[0].trim();
     _cityController.removeListener(_onCityChanged);
-    _cityController.text = name;
+    _cityController.text = city;
     _cityController.addListener(_onCityChanged);
-    _selectedCity = name;
-    _cityConfirmed = true;
+
+    _selectedCity = city;
+    _cityConfirmed = city.isNotEmpty;
+
+    _addressController.removeListener(_onAddressChanged);
     _addressController.clear();
-    widget.onCityChanged(name);
+    _addressController.addListener(_onAddressChanged);
+
+    widget.onCityChanged(city);
     widget.onAddressChanged('');
-    _hideCityOverlay();
-    setState(() => _citySuggestions = []);
+
+    setState(() {
+      _citySuggestions = [];
+      _addressSuggestions = [];
+    });
+
     _addressFocus.requestFocus();
   }
 
-  void _selectAddress(NominatimResult result) {
-    final clean = _cleanAddress(result.displayName, _selectedCity);
-    _addressController.removeListener(_onAddressChanged);
-    _addressController.text = clean;
-    _addressController.addListener(_onAddressChanged);
-    widget.onAddressChanged('$_selectedCity, $clean');
-    if (widget.onLocationSelected != null) {
-      widget.onLocationSelected!(result.lat, result.lon);
+  void _selectAddress(GeocodeSuggestion suggestion) {
+    final city = _extractCity(suggestion.address);
+    final street = _withoutCity(suggestion.address, city);
+
+    if (city.isNotEmpty && city != _selectedCity) {
+      _cityController.removeListener(_onCityChanged);
+      _cityController.text = city;
+      _cityController.addListener(_onCityChanged);
+      _selectedCity = city;
+      _cityConfirmed = true;
+      widget.onCityChanged(city);
     }
-    _hideAddressOverlay();
+
+    _addressController.removeListener(_onAddressChanged);
+    _addressController.text = street;
+    _addressController.addListener(_onAddressChanged);
+
+    final fullAddress = suggestion.address.isNotEmpty
+        ? suggestion.address
+        : '$_selectedCity, $street';
+    widget.onAddressChanged(fullAddress);
+    widget.onLocationSelected?.call(suggestion.lat, suggestion.lng);
+
     setState(() => _addressSuggestions = []);
-  }
-
-  void _showCityOverlay() {
-    _hideCityOverlay();
-    final renderBox = _cityKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-    final surfaceColor = context.appColors.surfaceWhite;
-    final borderColor = context.appColors.border;
-
-    _cityOverlay = OverlayEntry(
-      builder: (context) => Positioned(
-        left: offset.dx,
-        top: offset.dy + size.height + 4,
-        width: size.width,
-        child: Material(
-          elevation: 4,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            constraints: const BoxConstraints(maxHeight: 250),
-            decoration: BoxDecoration(
-              color: surfaceColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor),
-            ),
-            child: ListView.builder(
-              padding: EdgeInsets.zero,
-              shrinkWrap: true,
-              itemCount: _citySuggestions.length,
-              itemBuilder: (ctx, i) {
-                final s = _citySuggestions[i];
-                return InkWell(
-                  onTap: () => _selectCity(s),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Text(s.displayName, style: const TextStyle(fontSize: 14)),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-    Overlay.of(context).insert(_cityOverlay!);
-  }
-
-  void _hideCityOverlay() {
-    _cityOverlay?.remove();
-    _cityOverlay = null;
-  }
-
-  void _showAddressOverlay() {
-    _hideAddressOverlay();
-    final renderBox = _addressKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-    final surfaceColor = context.appColors.surfaceWhite;
-    final borderColor = context.appColors.border;
-
-    _addressOverlay = OverlayEntry(
-      builder: (context) => Positioned(
-        left: offset.dx,
-        top: offset.dy + size.height + 4,
-        width: size.width,
-        child: Material(
-          elevation: 4,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            constraints: const BoxConstraints(maxHeight: 250),
-            decoration: BoxDecoration(
-              color: surfaceColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor),
-            ),
-            child: ListView.builder(
-              padding: EdgeInsets.zero,
-              shrinkWrap: true,
-              itemCount: _addressSuggestions.length,
-              itemBuilder: (ctx, i) {
-                final s = _addressSuggestions[i];
-                final display = _cleanAddress(s.displayName, _selectedCity);
-                return InkWell(
-                  onTap: () => _selectAddress(s),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Text(display.isNotEmpty ? display : s.displayName, style: const TextStyle(fontSize: 14)),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-    Overlay.of(context).insert(_addressOverlay!);
-  }
-
-  void _hideAddressOverlay() {
-    _addressOverlay?.remove();
-    _addressOverlay = null;
   }
 
   @override
@@ -353,11 +336,9 @@ class _AddressPickerState extends State<AddressPicker> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // City
         const Text('Город', style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         TextFormField(
-          key: _cityKey,
           controller: _cityController,
           focusNode: _cityFocus,
           decoration: InputDecoration(
@@ -366,7 +347,10 @@ class _AddressPickerState extends State<AddressPicker> {
             suffixIcon: _loadingCities
                 ? const Padding(
                     padding: EdgeInsets.all(12),
-                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                    child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2)),
                   )
                 : _cityConfirmed
                     ? Icon(Icons.check_circle, color: context.appColors.success)
@@ -375,28 +359,82 @@ class _AddressPickerState extends State<AddressPicker> {
           enabled: widget.enabled,
           validator: (v) => v == null || v.isEmpty ? 'Выберите город' : null,
         ),
+        if (_citySuggestions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            constraints: const BoxConstraints(maxHeight: 220),
+            decoration: BoxDecoration(
+              color: context.appColors.surfaceWhite,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: context.appColors.border),
+            ),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _citySuggestions.length,
+              itemBuilder: (context, i) {
+                final s = _citySuggestions[i];
+                return ListTile(
+                  dense: true,
+                  title: Text(s.address.isNotEmpty ? s.address : s.title,
+                      style: const TextStyle(fontSize: 14)),
+                  onTap: () => _selectCity(s),
+                );
+              },
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
-
-        // Address
         const Text('Адрес', style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         TextFormField(
-          key: _addressKey,
           controller: _addressController,
           focusNode: _addressFocus,
           decoration: InputDecoration(
-            hintText: _cityConfirmed ? 'Улица, дом...' : 'Сначала выберите город',
+            hintText:
+                _cityConfirmed ? 'Улица, дом...' : 'Сначала выберите город',
             prefixIcon: const Icon(Icons.location_on_outlined),
             suffixIcon: _loadingAddresses
                 ? const Padding(
                     padding: EdgeInsets.all(12),
-                    child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                    child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2)),
                   )
                 : null,
           ),
           enabled: widget.enabled && _cityConfirmed,
           validator: (v) => v == null || v.isEmpty ? 'Укажите адрес' : null,
         ),
+        if (_addressSuggestions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            constraints: const BoxConstraints(maxHeight: 240),
+            decoration: BoxDecoration(
+              color: context.appColors.surfaceWhite,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: context.appColors.border),
+            ),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _addressSuggestions.length,
+              itemBuilder: (context, i) {
+                final s = _addressSuggestions[i];
+                final city = _extractCity(s.address);
+                final display = _withoutCity(s.address, city);
+                return ListTile(
+                  dense: true,
+                  title: Text(
+                      display.isNotEmpty
+                          ? display
+                          : (s.address.isNotEmpty ? s.address : s.title),
+                      style: const TextStyle(fontSize: 14)),
+                  onTap: () => _selectAddress(s),
+                );
+              },
+            ),
+          ),
+        ],
       ],
     );
   }

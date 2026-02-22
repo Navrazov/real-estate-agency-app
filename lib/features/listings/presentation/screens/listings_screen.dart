@@ -26,6 +26,7 @@ class _ListingsScreenState extends State<ListingsScreen> {
   String? _error;
   _ViewMode _viewMode = _ViewMode.list;
   String? _selectedId;
+  final ScrollController _mapCardsController = ScrollController();
   bool _showFilters = false;
   String? _currentUserId;
 
@@ -85,7 +86,21 @@ class _ListingsScreenState extends State<ListingsScreen> {
     _maxRoomsCtrl.dispose();
     _minAreaCtrl.dispose();
     _maxAreaCtrl.dispose();
+    _mapCardsController.dispose();
     super.dispose();
+  }
+
+  void _selectListingFromMap(String id, List<Listing> listings) {
+    setState(() => _selectedId = id);
+    final index = listings.indexWhere((l) => l.id == id);
+    if (index < 0 || !_mapCardsController.hasClients) return;
+    const itemWidthWithGap = 212.0;
+    final target = (index * itemWidthWithGap).clamp(0.0, _mapCardsController.position.maxScrollExtent);
+    _mapCardsController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   ListingsQuery _buildQuery() {
@@ -191,7 +206,15 @@ class _ListingsScreenState extends State<ListingsScreen> {
     final listings = _response?.items ?? [];
     final markers = listings
         .where((l) => l.lat != null && l.lng != null)
-        .map((l) => MapMarker(id: l.id, lat: l.lat!, lng: l.lng!, title: l.title))
+        .map((l) => MapMarker(
+              id: l.id,
+              lat: l.lat!,
+              lng: l.lng!,
+              title: l.title,
+              subtitle: l.address,
+              price: l.price,
+              imageUrl: l.images.isNotEmpty ? l.images.first : null,
+            ))
         .toList();
 
     return Scaffold(
@@ -797,20 +820,22 @@ class _ListingsScreenState extends State<ListingsScreen> {
   }
 
   Widget _buildMapView(List<MapMarker> markers, List<Listing> listings) {
+    final bottomHeight = MediaQuery.of(context).size.height < 720 ? 112.0 : 140.0;
     return Column(
       children: [
         Expanded(
           child: ListingsMap(
             markers: markers,
             selectedId: _selectedId,
-            onMarkerTap: (id) => setState(() => _selectedId = id),
+            onMarkerTap: (id) => _selectListingFromMap(id, listings),
             height: double.infinity,
           ),
         ),
         if (listings.isNotEmpty)
           SizedBox(
-            height: 140,
+            height: bottomHeight,
             child: ListView.builder(
+              controller: _mapCardsController,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.all(12),
               itemCount: listings.length,
