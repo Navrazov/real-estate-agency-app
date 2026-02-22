@@ -207,6 +207,8 @@ class _ListingsScreenState extends State<ListingsScreen> {
   Widget build(BuildContext context) {
     final auth = AuthServiceScope.of(context);
     final listings = _response?.items ?? [];
+    final isSmallScreen = MediaQuery.of(context).size.width < 1024;
+    final isFullscreenMap = _viewMode == _ViewMode.map && isSmallScreen;
     final markers = listings
         .where((l) => l.lat != null && l.lng != null)
         .map((l) => MapMarker(
@@ -247,122 +249,310 @@ class _ListingsScreenState extends State<ListingsScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Search & Filters Bar
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.appColors.surfaceWhite,
-              border:
-                  Border(bottom: BorderSide(color: context.appColors.border)),
-            ),
-            child: Column(
+      body: isFullscreenMap
+          ? _buildMobileFullscreenMapView(markers, listings)
+          : Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 42,
-                        child: TextField(
-                          controller: _searchCtrl,
-                          decoration: InputDecoration(
-                            hintText: 'Поиск',
-                            prefixIcon: const Icon(Icons.search, size: 20),
-                            suffixIcon: _searchCtrl.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear, size: 18),
-                                    onPressed: () {
-                                      _searchCtrl.clear();
-                                      _applyFilters();
-                                    },
-                                  )
-                                : null,
-                            contentPadding:
-                                const EdgeInsets.symmetric(horizontal: 12),
+                // Search & Filters Bar
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.appColors.surfaceWhite,
+                    border: Border(
+                        bottom: BorderSide(color: context.appColors.border)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 42,
+                              child: TextField(
+                                controller: _searchCtrl,
+                                decoration: InputDecoration(
+                                  hintText: 'Поиск',
+                                  prefixIcon:
+                                      const Icon(Icons.search, size: 20),
+                                  suffixIcon: _searchCtrl.text.isNotEmpty
+                                      ? IconButton(
+                                          icon:
+                                              const Icon(Icons.clear, size: 18),
+                                          onPressed: () {
+                                            _searchCtrl.clear();
+                                            _applyFilters();
+                                          },
+                                        )
+                                      : null,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12),
+                                ),
+                                onSubmitted: (_) => _applyFilters(),
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            ),
                           ),
-                          onSubmitted: (_) => _applyFilters(),
-                          style: const TextStyle(fontSize: 14),
-                        ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            height: 42,
+                            child: IconButton.filled(
+                              onPressed: () =>
+                                  setState(() => _showFilters = !_showFilters),
+                              icon: Icon(
+                                  _showFilters
+                                      ? Icons.filter_list_off
+                                      : Icons.filter_list,
+                                  size: 20),
+                              style: IconButton.styleFrom(
+                                backgroundColor: _showFilters
+                                    ? context.appColors.primary
+                                    : context.appColors.primary
+                                        .withValues(alpha: 0.1),
+                                foregroundColor: _showFilters
+                                    ? Colors.white
+                                    : context.appColors.primary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SegmentedButton<_ViewMode>(
+                            segments: const [
+                              ButtonSegment(
+                                  value: _ViewMode.list,
+                                  icon: Icon(Icons.view_list, size: 18)),
+                              ButtonSegment(
+                                  value: _ViewMode.map,
+                                  icon: Icon(Icons.map, size: 18)),
+                            ],
+                            selected: {_viewMode},
+                            onSelectionChanged: (s) =>
+                                setState(() => _viewMode = s.first),
+                            showSelectedIcon: false,
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      height: 42,
-                      child: IconButton.filled(
-                        onPressed: () =>
-                            setState(() => _showFilters = !_showFilters),
-                        icon: Icon(
-                            _showFilters
-                                ? Icons.filter_list_off
-                                : Icons.filter_list,
-                            size: 20),
-                        style: IconButton.styleFrom(
-                          backgroundColor: _showFilters
-                              ? context.appColors.primary
-                              : context.appColors.primary
-                                  .withValues(alpha: 0.1),
-                          foregroundColor: _showFilters
-                              ? Colors.white
-                              : context.appColors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SegmentedButton<_ViewMode>(
-                      segments: const [
-                        ButtonSegment(
-                            value: _ViewMode.list,
-                            icon: Icon(Icons.view_list, size: 18)),
-                        ButtonSegment(
-                            value: _ViewMode.map,
-                            icon: Icon(Icons.map, size: 18)),
+                      if (_showFilters) ...[
+                        const SizedBox(height: 12),
+                        _buildFiltersPanel(),
                       ],
-                      selected: {_viewMode},
-                      onSelectionChanged: (s) =>
-                          setState(() => _viewMode = s.first),
-                      showSelectedIcon: false,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                if (_showFilters) ...[
-                  const SizedBox(height: 12),
-                  _buildFiltersPanel(),
-                ],
+
+                // Content
+                Expanded(
+                  child: _loading && listings.isEmpty
+                      ? const SkeletonListingsGrid()
+                      : _error != null && listings.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.error_outline,
+                                      size: 48, color: context.appColors.error),
+                                  const SizedBox(height: 16),
+                                  Text(_error!, textAlign: TextAlign.center),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                      onPressed: _load,
+                                      child: const Text('Повторить')),
+                                ],
+                              ),
+                            )
+                          : _loading && _response != null
+                              ? const SkeletonListingsGrid()
+                              : _viewMode == _ViewMode.map
+                                  ? _buildMapView(markers, listings)
+                                  : listings.isEmpty
+                                      ? _buildEmptyState()
+                                      : _buildGridView(listings, auth),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildMobileFullscreenMapView(
+      List<MapMarker> markers, List<Listing> listings) {
+    if (_loading && listings.isEmpty) {
+      return const SkeletonListingsGrid();
+    }
+    if (_error != null && listings.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: context.appColors.error),
+            const SizedBox(height: 16),
+            Text(_error!, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: _load, child: const Text('Повторить')),
+          ],
+        ),
+      );
+    }
+
+    final bottomHeight =
+        MediaQuery.of(context).size.height < 720 ? 112.0 : 140.0;
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ListingsMap(
+            markers: markers,
+            selectedId: _selectedId,
+            onMarkerTap: (id) => _selectListingFromMap(id, listings),
+            height: double.infinity,
+          ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                FilledButton.icon(
+                  onPressed: () => setState(() => _viewMode = _ViewMode.list),
+                  icon: const Icon(Icons.view_list, size: 18),
+                  label: const Text('Список'),
+                ),
               ],
             ),
           ),
-
-          // Content
-          Expanded(
-            child: _loading && listings.isEmpty
-                ? const SkeletonListingsGrid()
-                : _error != null && listings.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.error_outline,
-                                size: 48, color: context.appColors.error),
-                            const SizedBox(height: 16),
-                            Text(_error!, textAlign: TextAlign.center),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                                onPressed: _load,
-                                child: const Text('Повторить')),
-                          ],
+        ),
+        if (listings.isNotEmpty)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SizedBox(
+              height: bottomHeight,
+              child: ListView.builder(
+                controller: _mapCardsController,
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.all(12),
+                itemCount: listings.length,
+                itemBuilder: (context, i) {
+                  final l = listings[i];
+                  final isSelected = l.id == _selectedId;
+                  return Container(
+                    width: 200,
+                    margin: const EdgeInsets.only(right: 12),
+                    child: Card(
+                      elevation: isSelected ? 5 : 0,
+                      shadowColor: isSelected
+                          ? context.appColors.primary.withValues(alpha: 0.25)
+                          : null,
+                      color: isSelected
+                          ? context.appColors.primary.withValues(alpha: 0.12)
+                          : null,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(
+                          color: isSelected
+                              ? context.appColors.primary
+                              : context.appColors.border,
+                          width: isSelected ? 1.6 : 1,
                         ),
-                      )
-                    : _loading && _response != null
-                        ? const SkeletonListingsGrid()
-                        : _viewMode == _ViewMode.map
-                            ? _buildMapView(markers, listings)
-                            : listings.isEmpty
-                                ? _buildEmptyState()
-                                : _buildGridView(listings, auth),
+                      ),
+                      child: InkWell(
+                        onTap: () => context.push('/listing/${l.id}'),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: l.images.isNotEmpty
+                                    ? CachedNetworkImage(
+                                        imageUrl: l.images.first,
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.cover,
+                                        placeholder: (_, __) => Container(
+                                          width: 60,
+                                          height: 60,
+                                          color: context.appColors.surface,
+                                        ),
+                                        errorWidget: (_, __, ___) => Container(
+                                          width: 60,
+                                          height: 60,
+                                          color: context.appColors.surface,
+                                          child:
+                                              const Center(child: Text('🏠')),
+                                        ),
+                                      )
+                                    : Container(
+                                        width: 60,
+                                        height: 60,
+                                        color: context.appColors.surface,
+                                        child: const Center(child: Text('🏠')),
+                                      ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      l.title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    if (l.paymentType ==
+                                        PaymentType.installment)
+                                      Text(
+                                        'Первый взнос',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            color: context.appColors.accent,
+                                            fontWeight: FontWeight.w600),
+                                      ),
+                                    Text(
+                                      _formatPrice(l.price),
+                                      style: TextStyle(
+                                        color: context.appColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          )
+        else
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.appColors.surfaceWhite,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.appColors.border),
+              ),
+              child: Text(
+                'В этой области нет объявлений',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: context.appColors.textSecondary),
+              ),
+            ),
           ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -391,8 +581,9 @@ class _ListingsScreenState extends State<ListingsScreen> {
                     onTap: () {
                       setState(() {
                         _propertyType = type;
-                        if (type != PropertyType.apartment)
+                        if (type != PropertyType.apartment) {
                           _apartmentType = null;
+                        }
                       });
                       _applyFilters();
                     },

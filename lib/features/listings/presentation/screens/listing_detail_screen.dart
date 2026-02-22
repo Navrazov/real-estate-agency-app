@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:real_estate_app/app/theme/app_theme.dart';
 import '../../../../core/auth/auth_service.dart';
-import '../../../../core/widgets/listings_map.dart';
 import '../../../../core/widgets/skeleton.dart';
 import '../../../chat/data/chat_repository.dart';
 import '../../data/listings_repository.dart';
@@ -94,10 +93,13 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
         title: const Text('Удалить объявление?'),
         content: const Text('Это действие нельзя отменить'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Отмена')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('Удалить', style: TextStyle(color: context.appColors.error)),
+            child: Text('Удалить',
+                style: TextStyle(color: context.appColors.error)),
           ),
         ],
       ),
@@ -108,7 +110,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
       if (mounted) context.go('/');
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -130,7 +133,6 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
     final isAdmin = auth.user?.isAdmin ?? false;
     final canEdit = isOwner || isAdmin;
     final images = _listing?.images ?? [];
-    final hasCoords = _listing?.lat != null && _listing?.lng != null;
 
     return Scaffold(
       body: _loading
@@ -140,11 +142,13 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.error_outline, size: 48, color: context.appColors.error),
+                      Icon(Icons.error_outline,
+                          size: 48, color: context.appColors.error),
                       const SizedBox(height: 16),
                       Text(_error!, textAlign: TextAlign.center),
                       const SizedBox(height: 16),
-                      ElevatedButton(onPressed: _load, child: const Text('Повторить')),
+                      ElevatedButton(
+                          onPressed: _load, child: const Text('Повторить')),
                     ],
                   ),
                 )
@@ -157,17 +161,22 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.lock_outline, size: 64, color: context.appColors.textMuted),
+                                Icon(Icons.lock_outline,
+                                    size: 64,
+                                    color: context.appColors.textMuted),
                                 const SizedBox(height: 16),
                                 const Text(
                                   'Объявление недоступно',
-                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   'Для просмотра этого объявления необходима подписка',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(color: context.appColors.textSecondary),
+                                  style: TextStyle(
+                                      color: context.appColors.textSecondary),
                                 ),
                                 const SizedBox(height: 24),
                                 ElevatedButton(
@@ -179,532 +188,600 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                           ),
                         )
                       : CustomScrollView(
-                      controller: _scrollController,
-                      slivers: [
-                        // Image Header
-                        SliverAppBar(
-                          expandedHeight: 300,
-                          pinned: true,
-                          leading: IconButton(
-                            icon: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.arrow_back, color: context.appColors.textPrimary),
-                            ),
-                            onPressed: () => context.pop(),
-                          ),
-                          actions: [
-                            IconButton(
-                              icon: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  _isFavorite ? Icons.favorite : Icons.favorite_border,
-                                  color: _isFavorite ? const Color(0xFFE8788A) : context.appColors.textPrimary,
-                                ),
-                              ),
-                              onPressed: _toggleFavorite,
-                            ),
-                            IconButton(
-                              icon: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(Icons.share_outlined, color: context.appColors.textPrimary),
-                              ),
-                              onPressed: () {
-                                if (_listing != null) {
-                                  Share.share(
-                                    '${_listing!.title} — ${_formatPrice(_listing!.price)}\n${_listing!.address}',
-                                    subject: _listing!.title,
-                                  );
-                                }
-                              },
-                            ),
-                            if (canEdit) ...[
-                              IconButton(
+                          controller: _scrollController,
+                          slivers: [
+                            // Image Header
+                            SliverAppBar(
+                              expandedHeight: 300,
+                              pinned: true,
+                              leading: IconButton(
                                 icon: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
+                                    color: context.appColors.surfaceWhite
+                                        .withValues(alpha: 0.9),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Icon(Icons.edit, color: context.appColors.textPrimary),
+                                  child: Icon(Icons.arrow_back,
+                                      color: context.appColors.textPrimary),
                                 ),
-                                onPressed: () => context.push('/listing/${widget.listingId}/edit'),
+                                onPressed: () => context.pop(),
                               ),
-                              IconButton(
-                                icon: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: context.appColors.surfaceWhite.withValues(alpha: 0.9),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(Icons.delete_outline, color: context.appColors.error),
-                                ),
-                                onPressed: _delete,
-                              ),
-                            ],
-                            const SizedBox(width: 8),
-                          ],
-                          flexibleSpace: FlexibleSpaceBar(
-                            background: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                images.isNotEmpty
-                                    ? PageView.builder(
-                                        itemCount: images.length,
-                                        onPageChanged: (i) => setState(() => _imageIndex = i),
-                                        itemBuilder: (context, i) {
-                                          final image = CachedNetworkImage(
-                                            imageUrl: images[i],
-                                            fit: BoxFit.cover,
-                                            placeholder: (_, __) => Container(
-                                              color: context.appColors.surface,
-                                              child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                            ),
-                                            errorWidget: (_, __, ___) => Container(
-                                              color: context.appColors.surface,
-                                              child: const Center(
-                                                child: Text('🏠', style: TextStyle(fontSize: 64)),
-                                              ),
-                                            ),
-                                          );
-                                          // Hero animation on first image to match catalog card
-                                          if (i == 0) {
-                                            return Hero(
-                                              tag: 'listing-image-${widget.listingId}',
-                                              child: image,
-                                            );
-                                          }
-                                          return image;
-                                        },
-                                      )
-                                    : Container(
-                                        color: context.appColors.surface,
-                                        child: const Center(
-                                          child: Text('🏠', style: TextStyle(fontSize: 64)),
-                                        ),
-                                      ),
-                                // Gradient overlay
-                                Positioned(
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  height: 100,
-                                  child: Container(
+                              actions: [
+                                IconButton(
+                                  icon: Container(
+                                    padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Colors.transparent,
-                                          Colors.black.withValues(alpha: 0.3),
-                                        ],
-                                      ),
+                                      color: context.appColors.surfaceWhite
+                                          .withValues(alpha: 0.9),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      _isFavorite
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: _isFavorite
+                                          ? const Color(0xFFE8788A)
+                                          : context.appColors.textPrimary,
                                     ),
                                   ),
+                                  onPressed: _toggleFavorite,
                                 ),
-                                // Image indicator
-                                if (images.length > 1)
-                                  Positioned(
-                                    bottom: 16,
-                                    left: 0,
-                                    right: 0,
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: List.generate(
-                                        images.length,
-                                        (i) => Container(
-                                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                                          width: i == _imageIndex ? 20 : 8,
-                                          height: 8,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(4),
-                                            color: i == _imageIndex
-                                                ? Colors.white
-                                                : Colors.white.withValues(alpha: 0.5),
+                                IconButton(
+                                  icon: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: context.appColors.surfaceWhite
+                                          .withValues(alpha: 0.9),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(Icons.share_outlined,
+                                        color: context.appColors.textPrimary),
+                                  ),
+                                  onPressed: () {
+                                    if (_listing != null) {
+                                      Share.share(
+                                        '${_listing!.title} — ${_formatPrice(_listing!.price)}\n${_listing!.address}',
+                                        subject: _listing!.title,
+                                      );
+                                    }
+                                  },
+                                ),
+                                if (canEdit) ...[
+                                  IconButton(
+                                    icon: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: context.appColors.surfaceWhite
+                                            .withValues(alpha: 0.9),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(Icons.edit,
+                                          color: context.appColors.textPrimary),
+                                    ),
+                                    onPressed: () => context.push(
+                                        '/listing/${widget.listingId}/edit'),
+                                  ),
+                                  IconButton(
+                                    icon: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: context.appColors.surfaceWhite
+                                            .withValues(alpha: 0.9),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(Icons.delete_outline,
+                                          color: context.appColors.error),
+                                    ),
+                                    onPressed: _delete,
+                                  ),
+                                ],
+                                const SizedBox(width: 8),
+                              ],
+                              flexibleSpace: FlexibleSpaceBar(
+                                background: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    images.isNotEmpty
+                                        ? PageView.builder(
+                                            itemCount: images.length,
+                                            onPageChanged: (i) =>
+                                                setState(() => _imageIndex = i),
+                                            itemBuilder: (context, i) {
+                                              final image = CachedNetworkImage(
+                                                imageUrl: images[i],
+                                                fit: BoxFit.cover,
+                                                placeholder: (_, __) =>
+                                                    Container(
+                                                  color:
+                                                      context.appColors.surface,
+                                                  child: const Center(
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                              strokeWidth: 2)),
+                                                ),
+                                                errorWidget: (_, __, ___) =>
+                                                    Container(
+                                                  color:
+                                                      context.appColors.surface,
+                                                  child: const Center(
+                                                    child: Text('🏠',
+                                                        style: TextStyle(
+                                                            fontSize: 64)),
+                                                  ),
+                                                ),
+                                              );
+                                              // Hero animation on first image to match catalog card
+                                              if (i == 0) {
+                                                return Hero(
+                                                  tag:
+                                                      'listing-image-${widget.listingId}',
+                                                  child: image,
+                                                );
+                                              }
+                                              return image;
+                                            },
+                                          )
+                                        : Container(
+                                            color: context.appColors.surface,
+                                            child: const Center(
+                                              child: Text('🏠',
+                                                  style:
+                                                      TextStyle(fontSize: 64)),
+                                            ),
+                                          ),
+                                    // Gradient overlay
+                                    Positioned(
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      height: 100,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.transparent,
+                                              Colors.black
+                                                  .withValues(alpha: 0.3),
+                                            ],
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        // Content
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Badges
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    _Badge(
-                                      text: _listing!.propertyType.label,
-                                      color: context.appColors.primary,
-                                    ),
-                                    _Badge(
-                                      text: _listing!.status.label,
-                                      color: _listing!.status == ListingStatus.active
-                                          ? context.appColors.success
-                                          : _listing!.status == ListingStatus.sold
-                                              ? context.appColors.error
-                                              : context.appColors.accent,
-                                    ),
-                                    if (_listing!.dealType == DealType.assignment)
-                                      _Badge(
-                                        text: 'Переуступка',
-                                        color: context.appColors.accent,
+                                    // Image indicator
+                                    if (images.length > 1)
+                                      Positioned(
+                                        bottom: 16,
+                                        left: 0,
+                                        right: 0,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: List.generate(
+                                            images.length,
+                                            (i) => Container(
+                                              margin:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 3),
+                                              width: i == _imageIndex ? 20 : 8,
+                                              height: 8,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                                color: i == _imageIndex
+                                                    ? Colors.white
+                                                    : Colors.white
+                                                        .withValues(alpha: 0.5),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                       ),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
+                              ),
+                            ),
 
-                                // Title
-                                Text(
-                                  _listing!.title,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-
-                                // Price
-                                if (_listing!.paymentType == PaymentType.installment)
-                                  Text(
-                                    'Первый взнос',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: context.appColors.accent,
-                                    ),
-                                  ),
-                                Text(
-                                  _formatPrice(_listing!.price),
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: context.appColors.primary,
-                                  ),
-                                ),
-
-                                // Payment Info
-                                if (_listing!.paymentType == PaymentType.installment &&
-                                    _listing!.installmentMonths != null &&
-                                    _listing!.installmentMonthly != null) ...[
-                                  const SizedBox(height: 12),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: context.appColors.accent.withValues(alpha: 0.1),
-                                      border: Border.all(color: context.appColors.accent.withValues(alpha: 0.3)),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                            // Content
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Badges
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
                                       children: [
-                                        Row(
+                                        _Badge(
+                                          text: _listing!.propertyType.label,
+                                          color: context.appColors.primary,
+                                        ),
+                                        _Badge(
+                                          text: _listing!.status.label,
+                                          color: _listing!.status ==
+                                                  ListingStatus.active
+                                              ? context.appColors.success
+                                              : _listing!.status ==
+                                                      ListingStatus.sold
+                                                  ? context.appColors.error
+                                                  : context.appColors.accent,
+                                        ),
+                                        if (_listing!.dealType ==
+                                            DealType.assignment)
+                                          _Badge(
+                                            text: 'Переуступка',
+                                            color: context.appColors.accent,
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 16),
+
+                                    // Title
+                                    Text(
+                                      _listing!.title,
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+
+                                    // Price
+                                    if (_listing!.paymentType ==
+                                        PaymentType.installment)
+                                      Text(
+                                        'Первый взнос',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: context.appColors.accent,
+                                        ),
+                                      ),
+                                    Text(
+                                      _formatPrice(_listing!.price),
+                                      style: TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: context.appColors.primary,
+                                      ),
+                                    ),
+
+                                    // Payment Info
+                                    if (_listing!.paymentType ==
+                                            PaymentType.installment &&
+                                        _listing!.installmentMonths != null &&
+                                        _listing!.installmentMonthly !=
+                                            null) ...[
+                                      const SizedBox(height: 12),
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: context.appColors.accent
+                                              .withValues(alpha: 0.1),
+                                          border: Border.all(
+                                              color: context.appColors.accent
+                                                  .withValues(alpha: 0.3)),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            const Text('📅', style: TextStyle(fontSize: 16)),
-                                            const SizedBox(width: 6),
+                                            Row(
+                                              children: [
+                                                const Text('📅',
+                                                    style: TextStyle(
+                                                        fontSize: 16)),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  'Рассрочка',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: context
+                                                        .appColors.accent,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
                                             Text(
-                                              'Рассрочка',
+                                              '${_formatPrice(_listing!.installmentMonthly!)}/мес',
                                               style: TextStyle(
-                                                fontWeight: FontWeight.w600,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold,
                                                 color: context.appColors.accent,
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          '${_formatPrice(_listing!.installmentMonthly!)}/мес',
-                                          style: TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.bold,
-                                            color: context.appColors.accent,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'на ${_listing!.installmentMonths} мес. • Итого ${_formatPrice(_listing!.installmentMonths! * _listing!.installmentMonthly!)}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: context.appColors.accent.withValues(alpha: 0.7),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ] else ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '💵 Наличные',
-                                    style: TextStyle(fontSize: 14, color: context.appColors.textSecondary),
-                                  ),
-                                ],
-                                const SizedBox(height: 12),
-
-                                // Assignment info
-                                if (_listing!.dealType == DealType.assignment) ...[
-                                  const SizedBox(height: 12),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: context.appColors.primary.withValues(alpha: 0.05),
-                                      border: Border.all(color: context.appColors.primary.withValues(alpha: 0.2)),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            const Text('📄', style: TextStyle(fontSize: 16)),
-                                            const SizedBox(width: 6),
+                                            const SizedBox(height: 4),
                                             Text(
-                                              'Переуступка (цессия)',
+                                              'на ${_listing!.installmentMonths} мес. • Итого ${_formatPrice(_listing!.installmentMonths! * _listing!.installmentMonthly!)}',
                                               style: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                                color: context.appColors.primary,
+                                                fontSize: 13,
+                                                color: context.appColors.accent
+                                                    .withValues(alpha: 0.7),
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 8),
-                                        if (_listing!.dduNumber != null && _listing!.dduNumber!.isNotEmpty)
-                                          _InfoRow(label: 'Номер ДДУ', value: _listing!.dduNumber!),
-                                        if (_listing!.dduDate != null && _listing!.dduDate!.isNotEmpty)
-                                          _InfoRow(label: 'Дата ДДУ', value: _listing!.dduDate!),
-                                        if (_listing!.assignmentOriginalPrice != null)
-                                          _InfoRow(label: 'Цена по ДДУ', value: _formatPrice(_listing!.assignmentOriginalPrice!)),
-                                        if (_listing!.completionDate != null && _listing!.completionDate!.isNotEmpty)
-                                          _InfoRow(label: 'Дата сдачи', value: _listing!.completionDate!),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-
-                                // Address
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.location_on_outlined,
-                                      size: 18,
-                                      color: context.appColors.textSecondary,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        _listing!.address,
+                                      ),
+                                    ] else ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '💵 Наличные',
                                         style: TextStyle(
-                                          color: context.appColors.textSecondary,
-                                          fontSize: 15,
-                                        ),
+                                            fontSize: 14,
+                                            color: context
+                                                .appColors.textSecondary),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 24),
-
-                                // Features
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: context.appColors.surface,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                    children: [
-                                      if (_listing!.rooms != null)
-                                        _FeatureItem(
-                                          icon: Icons.bed_outlined,
-                                          value: '${_listing!.rooms}',
-                                          label: 'Комнат',
-                                        ),
-                                      if (_listing!.area != null)
-                                        _FeatureItem(
-                                          icon: Icons.square_foot,
-                                          value: _listing!.area!.toStringAsFixed(0),
-                                          label: 'м²',
-                                        ),
-                                      if (_listing!.floor != null)
-                                        _FeatureItem(
-                                          icon: Icons.stairs,
-                                          value: _listing!.totalFloors != null
-                                              ? '${_listing!.floor}/${_listing!.totalFloors}'
-                                              : '${_listing!.floor}',
-                                          label: 'Этаж',
-                                        ),
                                     ],
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Icon(Icons.visibility_outlined, size: 14, color: context.appColors.textMuted),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${_listing!.views} просмотров',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: context.appColors.textMuted,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 24),
+                                    const SizedBox(height: 12),
 
-                                // Description
-                                const Text(
-                                  'Описание',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _listing!.description,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    height: 1.6,
-                                    color: context.appColors.textSecondary,
-                                  ),
-                                ),
-
-                                // Map
-                                if (hasCoords) ...[
-                                  const SizedBox(height: 24),
-                                  const Text(
-                                    'Расположение',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: SizedBox(
-                                      height: 200,
-                                      child: ListingsMap(
-                                        markers: [
-                                          MapMarker(
-                                            id: _listing!.id,
-                                            lat: _listing!.lat!,
-                                            lng: _listing!.lng!,
-                                            title: _listing!.title,
-                                            subtitle: _listing!.address,
-                                            price: _listing!.price,
-                                            imageUrl: _listing!.images.isNotEmpty ? _listing!.images.first : null,
-                                          ),
-                                        ],
-                                        height: 200,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-
-                                // Author
-                                if (_listing!.authorName != null) ...[
-                                  const SizedBox(height: 24),
-                                  GestureDetector(
-                                    onTap: () => context.push('/user/${_listing!.authorId}'),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        color: context.appColors.surfaceWhite,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(color: context.appColors.border),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 24,
-                                            backgroundColor: context.appColors.primary.withValues(alpha: 0.1),
-                                            child: Text(
-                                              _listing!.authorName!.substring(0, 1).toUpperCase(),
-                                              style: TextStyle(
-                                                color: context.appColors.primary,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 18,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                    // Assignment info
+                                    if (_listing!.dealType ==
+                                        DealType.assignment) ...[
+                                      const SizedBox(height: 12),
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: context.appColors.primary
+                                              .withValues(alpha: 0.05),
+                                          border: Border.all(
+                                              color: context.appColors.primary
+                                                  .withValues(alpha: 0.2)),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
                                               children: [
-                                                Text(
-                                                  'Продавец',
-                                                  style: TextStyle(
-                                                    color: context.appColors.textMuted,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                Text(
-                                                  _listing!.authorName!,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 16,
-                                                  ),
-                                                ),
-                                                if (_listing!.authorPhone != null)
-                                                  Text(
-                                                    _listing!.authorPhone!,
+                                                const Text('📄',
                                                     style: TextStyle(
-                                                      color: context.appColors.primary,
-                                                      fontSize: 14,
-                                                    ),
+                                                        fontSize: 16)),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  'Переуступка (цессия)',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    color: context
+                                                        .appColors.primary,
                                                   ),
+                                                ),
                                               ],
                                             ),
+                                            const SizedBox(height: 8),
+                                            if (_listing!.dduNumber != null &&
+                                                _listing!.dduNumber!.isNotEmpty)
+                                              _InfoRow(
+                                                  label: 'Номер ДДУ',
+                                                  value: _listing!.dduNumber!),
+                                            if (_listing!.dduDate != null &&
+                                                _listing!.dduDate!.isNotEmpty)
+                                              _InfoRow(
+                                                  label: 'Дата ДДУ',
+                                                  value: _listing!.dduDate!),
+                                            if (_listing!
+                                                    .assignmentOriginalPrice !=
+                                                null)
+                                              _InfoRow(
+                                                  label: 'Цена по ДДУ',
+                                                  value: _formatPrice(_listing!
+                                                      .assignmentOriginalPrice!)),
+                                            if (_listing!.completionDate !=
+                                                    null &&
+                                                _listing!
+                                                    .completionDate!.isNotEmpty)
+                                              _InfoRow(
+                                                  label: 'Дата сдачи',
+                                                  value: _listing!
+                                                      .completionDate!),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+
+                                    // Address
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_on_outlined,
+                                          size: 18,
+                                          color:
+                                              context.appColors.textSecondary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            _listing!.address,
+                                            style: TextStyle(
+                                              color: context
+                                                  .appColors.textSecondary,
+                                              fontSize: 15,
+                                            ),
                                           ),
-                                          if (_listing!.authorPhone != null)
-                                            IconButton.filled(
-                                              onPressed: () {
-                                                // Could launch phone call
-                                              },
-                                              icon: const Icon(Icons.phone),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 24),
+
+                                    // Features
+                                    Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: context.appColors.surface,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceAround,
+                                        children: [
+                                          if (_listing!.rooms != null)
+                                            _FeatureItem(
+                                              icon: Icons.bed_outlined,
+                                              value: '${_listing!.rooms}',
+                                              label: 'Комнат',
+                                            ),
+                                          if (_listing!.area != null)
+                                            _FeatureItem(
+                                              icon: Icons.square_foot,
+                                              value: _listing!.area!
+                                                  .toStringAsFixed(0),
+                                              label: 'м²',
+                                            ),
+                                          if (_listing!.floor != null)
+                                            _FeatureItem(
+                                              icon: Icons.stairs,
+                                              value: _listing!.totalFloors !=
+                                                      null
+                                                  ? '${_listing!.floor}/${_listing!.totalFloors}'
+                                                  : '${_listing!.floor}',
+                                              label: 'Этаж',
                                             ),
                                         ],
                                       ),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.visibility_outlined,
+                                            size: 14,
+                                            color: context.appColors.textMuted),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${_listing!.views} просмотров',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: context.appColors.textMuted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 24),
 
-                                const SizedBox(height: 100),
-                              ],
+                                    // Description
+                                    const Text(
+                                      'Описание',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      _listing!.description,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        height: 1.6,
+                                        color: context.appColors.textSecondary,
+                                      ),
+                                    ),
+
+                                    // Author
+                                    if (_listing!.authorName != null) ...[
+                                      const SizedBox(height: 24),
+                                      GestureDetector(
+                                        onTap: () => context.push(
+                                            '/user/${_listing!.authorId}'),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                context.appColors.surfaceWhite,
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                            border: Border.all(
+                                                color:
+                                                    context.appColors.border),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 24,
+                                                backgroundColor: context
+                                                    .appColors.primary
+                                                    .withValues(alpha: 0.1),
+                                                child: Text(
+                                                  _listing!.authorName!
+                                                      .substring(0, 1)
+                                                      .toUpperCase(),
+                                                  style: TextStyle(
+                                                    color: context
+                                                        .appColors.primary,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 18,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 16),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Продавец',
+                                                      style: TextStyle(
+                                                        color: context.appColors
+                                                            .textMuted,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      _listing!.authorName!,
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 16,
+                                                      ),
+                                                    ),
+                                                    if (_listing!.authorPhone !=
+                                                        null)
+                                                      Text(
+                                                        _listing!.authorPhone!,
+                                                        style: TextStyle(
+                                                          color: context
+                                                              .appColors
+                                                              .primary,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                              ),
+                                              if (_listing!.authorPhone != null)
+                                                IconButton.filled(
+                                                  onPressed: () {
+                                                    // Could launch phone call
+                                                  },
+                                                  icon: const Icon(Icons.phone),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+
+                                    const SizedBox(height: 100),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
       bottomNavigationBar: _listing != null && !_loading
           ? Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: context.appColors.surfaceWhite,
-                border: Border(top: BorderSide(color: context.appColors.border)),
+                border:
+                    Border(top: BorderSide(color: context.appColors.border)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
@@ -723,7 +800,8 @@ class _ListingDetailScreenState extends State<ListingDetailScreen> {
                           _isFavorite ? Icons.favorite : Icons.favorite_border,
                           color: _isFavorite ? const Color(0xFFE8788A) : null,
                         ),
-                        label: Text(_isFavorite ? 'В избранном' : 'В избранное'),
+                        label:
+                            Text(_isFavorite ? 'В избранном' : 'В избранное'),
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size.fromHeight(56),
                         ),

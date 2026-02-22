@@ -124,6 +124,30 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
     setState(() => _imageUrls.removeAt(index));
   }
 
+  Future<void> _openMapPicker() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _CreateListingMapPickerScreen(
+          lat: _lat,
+          lng: _lng,
+          onChanged: (lat, lng) {
+            setState(() {
+              _lat = lat;
+              _lng = lng;
+            });
+          },
+          onReverseGeocode: (address) {
+            setState(() {
+              _reverseAddress = address;
+              _address = address;
+            });
+          },
+        ),
+        fullscreenDialog: true,
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -595,8 +619,9 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
               validator: (v) {
                 if (v == null || v.isEmpty) return 'Обязательное поле';
                 final digits = v.replaceAll(RegExp(r'[^\d]'), '');
-                if (double.tryParse(digits) == null)
+                if (double.tryParse(digits) == null) {
                   return 'Некорректное число';
+                }
                 return null;
               },
             ),
@@ -851,31 +876,30 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
                 style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(
-              'Нажмите на карту — адрес заполнится автоматически',
+              'Карта откроется только после нажатия кнопки',
               style:
                   TextStyle(color: context.appColors.textMuted, fontSize: 12),
             ),
             const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: SizedBox(
-                height: 250,
-                child: LocationPickerMap(
-                  initialLat: _lat,
-                  initialLng: _lng,
-                  onLocationChanged: (lat, lng) {
-                    _lat = lat;
-                    _lng = lng;
-                  },
-                  onReverseGeocode: (address) {
-                    setState(() {
-                      _reverseAddress = address;
-                      _address = address;
-                    });
-                  },
-                ),
+            OutlinedButton.icon(
+              onPressed: _loading ? null : _openMapPicker,
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Выбрать местоположение по карте'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                side: BorderSide(color: context.appColors.border),
               ),
             ),
+            if (_lat != null && _lng != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Выбрано: ${_lat!.toStringAsFixed(5)}, ${_lng!.toStringAsFixed(5)}',
+                style: TextStyle(
+                  color: context.appColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
 
             // Submit
@@ -896,6 +920,45 @@ class _CreateListingScreenState extends State<CreateListingScreen> {
             const SizedBox(height: 32),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CreateListingMapPickerScreen extends StatelessWidget {
+  const _CreateListingMapPickerScreen({
+    required this.lat,
+    required this.lng,
+    required this.onChanged,
+    required this.onReverseGeocode,
+  });
+
+  final double? lat;
+  final double? lng;
+  final void Function(double lat, double lng) onChanged;
+  final void Function(String address) onReverseGeocode;
+
+  @override
+  Widget build(BuildContext context) {
+    final mapHeight = MediaQuery.of(context).size.height -
+        kToolbarHeight -
+        MediaQuery.of(context).padding.top;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Выбор на карте'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Готово'),
+          ),
+        ],
+      ),
+      body: LocationPickerMap(
+        initialLat: lat,
+        initialLng: lng,
+        onLocationChanged: onChanged,
+        onReverseGeocode: onReverseGeocode,
+        height: mapHeight,
       ),
     );
   }
