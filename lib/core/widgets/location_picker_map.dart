@@ -180,11 +180,13 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
       [class*="ymaps-2-1-"][class*="map-copyrights-promo"],
       [class*="ymaps-2-1-"][class*="traffic"],
       [class*="ymaps-2-1-"][class*="layers"] { display: none !important; }
+      .locate-btn { position: absolute; bottom: 12px; right: 12px; z-index: 10; background: rgba(255,255,255,0.95); color: #334155; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=$_yandexApiKey&lang=ru_RU" type="text/javascript"></script>
   </head>
   <body>
     <div id="map"></div>
+    <button class="locate-btn" onclick="locateMe()">Моя локация</button>
     <script>
       const startPoint = [${_point.lat}, ${_point.lng}];
       const startZoom = ${_lat != null && _lng != null ? 14.0 : _defaultZoom};
@@ -193,6 +195,16 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
 
       function emit(coords) {
         LocationChanged.postMessage(coords[0] + ',' + coords[1]);
+      }
+
+      function locateMe() {
+        if (!map || !navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(function(pos) {
+          const coords = [pos.coords.latitude, pos.coords.longitude];
+          marker.geometry.setCoordinates(coords);
+          map.setCenter(coords, 12, { duration: 220 });
+          emit(coords);
+        }, function() {}, { enableHighAccuracy: true, timeout: 8000 });
       }
 
       window.setPoint = function(lat, lng) {
@@ -205,12 +217,11 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
       ymaps.ready(function() {
         map = new ymaps.Map('map', {
           center: startPoint,
-          zoom: startZoom
+          zoom: startZoom,
+          controls: ['zoomControl']
         }, {
           suppressMapOpenBlock: true,
-          controls: ['geolocationControl'],
-          minZoom: 2,
-          maxZoom: 18
+          restrictMapArea: [[85.23618, -178.9], [-73.87011, 181]]
         });
         try { map.behaviors.disable('ruler'); } catch (e) {}
 
@@ -295,11 +306,13 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
       [class*="ymaps-2-1-"][class*="map-copyrights-promo"],
       [class*="ymaps-2-1-"][class*="traffic"],
       [class*="ymaps-2-1-"][class*="layers"] { display: none !important; }
+      .locate-btn { position: absolute; bottom: 12px; right: 12px; z-index: 10; background: rgba(255,255,255,0.95); color: #334155; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=$_yandexApiKey&lang=ru_RU" type="text/javascript"></script>
   </head>
   <body>
     <div id="map"></div>
+    <button class="locate-btn" onclick="locateMe()">Моя локация</button>
     <script>
       const startPoint = [${_point.lat}, ${_point.lng}];
       const startZoom = ${_lat != null && _lng != null ? 14.0 : _defaultZoom};
@@ -311,6 +324,15 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
           window.LocationChanged.postMessage(coords[0] + ',' + coords[1]);
         }
       }
+      function locateMe() {
+        if (!map || !navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(function(pos) {
+          const coords = [pos.coords.latitude, pos.coords.longitude];
+          marker.geometry.setCoordinates(coords);
+          map.setCenter(coords, 12, { duration: 220 });
+          emit(coords);
+        }, function() {}, { enableHighAccuracy: true, timeout: 8000 });
+      }
       window.setPoint = function(lat, lng) {
         if (!map || !marker) return;
         const coords = [lat, lng];
@@ -318,7 +340,7 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
         map.setCenter(coords, Math.max(map.getZoom(), 12), { duration: 150 });
       }
       ymaps.ready(function() {
-        map = new ymaps.Map('map', { center: startPoint, zoom: startZoom }, { suppressMapOpenBlock: true, controls: ['geolocationControl'], minZoom: 2, maxZoom: 18 });
+        map = new ymaps.Map('map', { center: startPoint, zoom: startZoom, controls: ['zoomControl'] }, { suppressMapOpenBlock: true, restrictMapArea: [[85.23618, -178.9], [-73.87011, 181]] });
         try { map.behaviors.disable('ruler'); } catch (e) {}
         marker = new ymaps.Placemark(startPoint, {}, { preset: 'islands#redIcon', draggable: true });
         marker.events.add('dragend', function() { emit(marker.geometry.getCoordinates()); });

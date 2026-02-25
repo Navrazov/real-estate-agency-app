@@ -115,6 +115,8 @@ class _ListingsMapState extends State<ListingsMap> {
           .toList(),
     );
 
+    final selectedId = widget.selectedId ?? '';
+
     final html = '''
 <!DOCTYPE html>
 <html>
@@ -127,41 +129,53 @@ class _ListingsMapState extends State<ListingsMap> {
       [class*="ymaps-2-1-"][class*="map-copyrights-promo"],
       [class*="ymaps-2-1-"][class*="traffic"],
       [class*="ymaps-2-1-"][class*="layers"] { display: none !important; }
+      .locate-btn { position: absolute; bottom: 12px; right: 12px; z-index: 10; background: rgba(255,255,255,0.95); color: #334155; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=$_yandexApiKey&lang=ru_RU" type="text/javascript"></script>
   </head>
   <body>
     <div id="map"></div>
+    <button class="locate-btn" onclick="locateMe()">Моя локация</button>
     <script>
       const center = [${center.lat}, ${center.lng}];
       const zoom = $zoom;
       const markers = $markersJson;
+      const selectedId = '$selectedId';
+
+      var mapInstance;
+      function locateMe() {
+        if (!mapInstance || !navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(function(pos) {
+          mapInstance.setCenter([pos.coords.latitude, pos.coords.longitude], 12, { duration: 220 });
+        }, function() {}, { enableHighAccuracy: true, timeout: 8000 });
+      }
 
       ymaps.ready(function() {
-        const map = new ymaps.Map('map', {
+        mapInstance = new ymaps.Map('map', {
           center,
-          zoom
+          zoom,
+          controls: ['zoomControl']
         }, {
           suppressMapOpenBlock: true,
-          controls: ['geolocationControl'],
-          minZoom: 2,
-          maxZoom: 18
+          restrictMapArea: [[85.23618, -178.9], [-73.87011, 181]]
         });
-        try { map.behaviors.disable('ruler'); } catch (e) {}
+        try { mapInstance.behaviors.disable('ruler'); } catch (e) {}
 
         const clusterer = new ymaps.Clusterer({
           preset: 'islands#invertedBlueClusterIcons',
-          groupByCoordinates: false
+          groupByCoordinates: false,
+          clusterDisableClickZoom: false
         });
 
         const placemarks = markers.map((m) => {
+          const isSelected = selectedId === m.id;
           const placemark = new ymaps.Placemark(
             [m.lat, m.lng],
             {
               hintContent: m.title,
             },
             {
-              preset: 'islands#blueIcon',
+              preset: isSelected ? 'islands#redIcon' : 'islands#blueIcon',
               hasBalloon: false,
               openBalloonOnClick: false
             }
@@ -173,45 +187,19 @@ class _ListingsMapState extends State<ListingsMap> {
         });
 
         clusterer.add(placemarks);
-        map.geoObjects.add(clusterer);
+        mapInstance.geoObjects.add(clusterer);
 
-        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-        function applyRestrictArea() {
-          if (!markers.length) return;
-          let minLat = markers[0].lat, maxLat = markers[0].lat;
-          let minLng = markers[0].lng, maxLng = markers[0].lng;
-          for (let i = 1; i < markers.length; i++) {
-            const m = markers[i];
-            minLat = Math.min(minLat, m.lat);
-            maxLat = Math.max(maxLat, m.lat);
-            minLng = Math.min(minLng, m.lng);
-            maxLng = Math.max(maxLng, m.lng);
+        try {
+          if (placemarks.length === 1) {
+            const coords = placemarks[0].geometry.getCoordinates();
+            mapInstance.setCenter(coords, Math.max(mapInstance.getZoom(), 12), { duration: 180 });
+          } else if (placemarks.length > 1) {
+            const bounds = clusterer.getBounds();
+            if (bounds) {
+              mapInstance.setBounds(bounds, { checkZoomRange: true, zoomMargin: 40, duration: 180 });
+            }
           }
-          if (markers.length === 1) {
-            const span = 0.06;
-            minLat -= span; maxLat += span; minLng -= span; maxLng += span;
-          } else {
-            const latPad = Math.max((maxLat - minLat) * 0.06, 0.06);
-            const lngPad = Math.max((maxLng - minLng) * 0.06, 0.06);
-            minLat -= latPad; maxLat += latPad; minLng -= lngPad; maxLng += lngPad;
-          }
-          minLat = clamp(minLat, -85, 85);
-          maxLat = clamp(maxLat, -85, 85);
-          minLng = clamp(minLng, -180, 180);
-          maxLng = clamp(maxLng, -180, 180);
-          try { map.options.set('restrictMapArea', [[minLat, minLng], [maxLat, maxLng]]); } catch (e) {}
-        }
-        applyRestrictArea();
-
-        if (placemarks.length === 1) {
-          const coords = placemarks[0].geometry.getCoordinates();
-          map.setCenter(coords, Math.max(map.getZoom(), 12), { duration: 120 });
-        } else if (placemarks.length > 1) {
-          const bounds = clusterer.getBounds();
-          if (bounds) {
-            map.setBounds(bounds, { checkZoomRange: true, zoomMargin: 40, duration: 120 });
-          }
-        }
+        } catch (e) {}
 
       });
     </script>
@@ -277,6 +265,8 @@ class _ListingsMapState extends State<ListingsMap> {
           .toList(),
     );
 
+    final selectedId = widget.selectedId ?? '';
+
     return '''
 <!DOCTYPE html>
 <html>
@@ -289,64 +279,50 @@ class _ListingsMapState extends State<ListingsMap> {
       [class*="ymaps-2-1-"][class*="map-copyrights-promo"],
       [class*="ymaps-2-1-"][class*="traffic"],
       [class*="ymaps-2-1-"][class*="layers"] { display: none !important; }
+      .locate-btn { position: absolute; bottom: 12px; right: 12px; z-index: 10; background: rgba(255,255,255,0.95); color: #334155; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
     <script src="https://api-maps.yandex.ru/2.1/?apikey=$_yandexApiKey&lang=ru_RU" type="text/javascript"></script>
   </head>
   <body>
     <div id="map"></div>
+    <button class="locate-btn" onclick="locateMe()">Моя локация</button>
     <script>
       const center = [${center.lat}, ${center.lng}];
       const zoom = $zoom;
       const markers = $markersJson;
+      const selectedId = '$selectedId';
+      var mapInstance;
+      function locateMe() {
+        if (!mapInstance || !navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition(function(pos) {
+          mapInstance.setCenter([pos.coords.latitude, pos.coords.longitude], 12, { duration: 220 });
+        }, function() {}, { enableHighAccuracy: true, timeout: 8000 });
+      }
       ymaps.ready(function() {
-        const map = new ymaps.Map('map', { center, zoom }, { suppressMapOpenBlock: true, controls: ['geolocationControl'], minZoom: 2, maxZoom: 18 });
-        try { map.behaviors.disable('ruler'); } catch (e) {}
-        const clusterer = new ymaps.Clusterer({ preset: 'islands#invertedBlueClusterIcons', groupByCoordinates: false });
+        mapInstance = new ymaps.Map('map', { center, zoom, controls: ['zoomControl'] }, { suppressMapOpenBlock: true, restrictMapArea: [[85.23618, -178.9], [-73.87011, 181]] });
+        try { mapInstance.behaviors.disable('ruler'); } catch (e) {}
+        const clusterer = new ymaps.Clusterer({ preset: 'islands#invertedBlueClusterIcons', groupByCoordinates: false, clusterDisableClickZoom: false });
         const placemarks = markers.map((m) => {
+          const isSelected = selectedId === m.id;
           const placemark = new ymaps.Placemark(
             [m.lat, m.lng],
             { hintContent: m.title },
-            { preset: 'islands#blueIcon', hasBalloon: false, openBalloonOnClick: false }
+            { preset: isSelected ? 'islands#redIcon' : 'islands#blueIcon', hasBalloon: false, openBalloonOnClick: false }
           );
           placemark.events.add('click', function() { window.parent.postMessage({type:'markerTap',id:m.id}, '*'); });
           return placemark;
         });
         clusterer.add(placemarks);
-        map.geoObjects.add(clusterer);
-        function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-        function applyRestrictArea() {
-          if (!markers.length) return;
-          let minLat = markers[0].lat, maxLat = markers[0].lat;
-          let minLng = markers[0].lng, maxLng = markers[0].lng;
-          for (let i = 1; i < markers.length; i++) {
-            const m = markers[i];
-            minLat = Math.min(minLat, m.lat);
-            maxLat = Math.max(maxLat, m.lat);
-            minLng = Math.min(minLng, m.lng);
-            maxLng = Math.max(maxLng, m.lng);
+        mapInstance.geoObjects.add(clusterer);
+        try {
+          if (placemarks.length === 1) {
+            const coords = placemarks[0].geometry.getCoordinates();
+            mapInstance.setCenter(coords, Math.max(mapInstance.getZoom(), 12), { duration: 180 });
+          } else if (placemarks.length > 1) {
+            const bounds = clusterer.getBounds();
+            if (bounds) mapInstance.setBounds(bounds, { checkZoomRange: true, zoomMargin: 40, duration: 180 });
           }
-          if (markers.length === 1) {
-            const span = 0.06;
-            minLat -= span; maxLat += span; minLng -= span; maxLng += span;
-          } else {
-            const latPad = Math.max((maxLat - minLat) * 0.06, 0.06);
-            const lngPad = Math.max((maxLng - minLng) * 0.06, 0.06);
-            minLat -= latPad; maxLat += latPad; minLng -= lngPad; maxLng += lngPad;
-          }
-          minLat = clamp(minLat, -85, 85);
-          maxLat = clamp(maxLat, -85, 85);
-          minLng = clamp(minLng, -180, 180);
-          maxLng = clamp(maxLng, -180, 180);
-          try { map.options.set('restrictMapArea', [[minLat, minLng], [maxLat, maxLng]]); } catch (e) {}
-        }
-        applyRestrictArea();
-        if (placemarks.length === 1) {
-          const coords = placemarks[0].geometry.getCoordinates();
-          map.setCenter(coords, Math.max(map.getZoom(), 12), { duration: 120 });
-        } else if (placemarks.length > 1) {
-          const bounds = clusterer.getBounds();
-          if (bounds) map.setBounds(bounds, { checkZoomRange: true, zoomMargin: 40, duration: 120 });
-        }
+        } catch (e) {}
       });
     </script>
   </body>
